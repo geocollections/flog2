@@ -1,0 +1,68 @@
+level	stratigraphy	index_main	stratigraphy_id	depth_top	depth_base	color
+1	Quaternary	Q	85	0	13.5	#FEE692
+1	Silurian	S	40	13.5	242.8	#B3E1B6
+1	Ordovician	O	12	242.8	363	#009270
+2	Wenlock	S2	46	13.5	115	#B3E1C2
+2	Llandovery	S1	42	115	242.8	#99D7B3
+2	Upper Ordovician	O3	101	242.8	344.9	#7FCA93
+2	Middle Ordovician	O2	100	344.9	363	#4DB47E
+3	Rootsiküla Stage	K1a	49	13.5	38.2	
+3	Jaagarahu Stage	J2	48	38.2	87.6	
+3	Jaani Stage	J1	47	87.6	121.1	
+3	Adavere Stage	H	45	121.1	190.7	
+3	Raikküla Stage	G3	44	190.7	221.5	
+3	Juuru Stage	G1-2	43	221.5	242.8	
+3	Porkuni Stage	FII	39	242.8	246.2	
+3	Pirgu Stage	FIc	38	246.2	288.6	
+3	Vormsi Stage	FIb	37	288.6	300.6	
+3	Nabala Stage	FIa	36	300.6	323.6	
+3	Rakvere Stage	E	34	323.6	327.5	
+3	Oandu Stage	DIII	32	327.5	328.5	
+3	Keila Stage	DII	29	328.5	330.3	
+3	Haljala Stage	CIII/DI	24	330.3	340.1	
+3	Kukruse Stage	CII	23	340.1	344.9	
+3	Uhaku Stage	CIc	22	344.9	354	
+3	Lasnamägi Stage	CIb	21	354	357.8	
+3	Aseri Stage	CIa	20	357.8	358.8	
+3	Kunda Stage	BIII	18	358.8	361.5	
+3	Volkhov Stage	BII	17	361.5	363	
+4	Rootsiküla Formation	K1R	342	13.5	38.2	
+4	Jaagarahu Formation	J2J	311	38.2	87.6	
+4	Jaani Formation	J1J	312	87.5	121.1	
+4	Velise Formation	H'V	365	121.1	183.5	
+4	Rumba Formation	H'R	345	183.5	190.7	
+4	Nurmekund Formation	G3N	331	190.7	221.5	
+4	Tamsalu Formation	G1-2T	357	221.5	224.2	
+4	Varbola Formation	G1-2V	364	224.2	242.8	
+4	Saldus Formation		272	242.8	245.2	
+4	Ärina Formation	FIIÄ	167	245.2	246.2	
+4	Adila Formation	FIcA	165	246.2	257	
+4	Moe Formation	FIcM	270	257	288.6	
+4	Tudulinna Formation	FIbT	474	288.6	300.6	
+4	Saunja Formation	DIIIFIaV'S	269	300.6	319.3	
+4	Paekna Formation	DIIFIaV'P	268	319.3	322.7	
+4	Rägavere Formation		440	322.7	327.5	
+4	Tõrremägi Formation	DIIIR'T	472	327.5	328	
+4	Hirmuse Formation	DIIIH	33	328	328.5	
+4	Kahula Formation		169	328.5	334.5	
+4	Tatruse Formation	CIII-DIIK'T	464	334.5	340.1	
+4	Pihla Formation		529	340.1	344.9	
+4	Kõrgekallas Formation	CIcK	287	344.9	348.8	
+4	Väo Formation	CIb-cV	283	348.8	357.8	
+4	Kandle Formation	BIII-CIbK	491	357.8	358.8	
+4	Loobu Formation	BIIIL	413	358.5	361.5	
+4	Toila Formation	BI-IIT	467	361.5	363	
+5	Soeginina Beds	K1R'S	350	13.5	14.5	
+5	Vesiku Beds	K1R'Ve	368	14.5	22.3	
+5	Kuusnõmme Beds	K1R'K	322	22.3	26	
+5	Viita Beds	K1R'V	369	26	38.5	
+5	Tagavere Beds	J2J'T	354	38.2	56.4	
+5	Maasi Beds	J2J'M	326	56.4	70.5	
+5	Vilsandi Beds	J2J'V	370	70.5	87.6	
+5	Ninase Member	J1P'N	330	87.6	99.6	
+5	Mustjala Member	J1	329	99.6	121.1	
+5	Järva-Jaani Beds		307	190.7	221.5	
+5	Koigi Member	G1-2V'K	318	239.7	242.8	
+5	Broceni Member		275	242.8	244.1	
+5	Piltene Member		274	244.1	245.2	
+5	Röa Member	FIIÄ'R	444	245.2	246.2	

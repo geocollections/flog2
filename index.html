@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="flog2.css" type="text/css" />
+<link rel="stylesheet" href="flog2_form.css" type="text/css" />
+<style type="text/css">
+body {
+	font-family: arial;
+	font-size:11px;
+	margin: 0;
+	padding: 0;
+}
+
+.chart { 
+	z-index:-1;
+	position: absolute;
+	margin: -15px 0 0 270px;
+	background-color: #fff;
+}
+
+#title { 
+    font-weight: bold; 
+    padding: 5px;
+}
+
+</style>
+</head>
+
+<body>
+<!-- Top draggable textarea -->
+<div id="dataStr" style=""><textarea id="Flog2DataStr"></textarea><div id="drag-tab-parent"><div id="drag-tab" draggable="true"></div></div></div>
+<!-- Get screen mm etalon -->
+<div id="mm_etalon" style="height:1mm;display:hidden;"></div>
+
+
+<form class="flog2_form" id="flog2_form_test">
+    <div id="title">FLOG2: Exploring geological section data</div>
+	<fieldset name="Flog2">
+		<!-- Data delimiter of used raw data -->
+        <!--
+		Delimiter: <br />
+			<input type="radio" name="dataDelimiter" value="\t" style="width:15px" checked="checked" /> tab 
+			<input type="radio" name="dataDelimiter" value="," style="width:15px" /> comma
+			<input type="radio" name="dataDelimiter" value=";" style="width:15px" /> semicolon
+		<br /> 
+        -->
+		<br />Chart title: <input type="text" name="title" style="width: 100%" />
+		<br />Depth, top (m): <input type="number" name="minDepth" value="0.0" step="0.01" />
+		<br />Depth, bottom (m): <input type="number" name="maxDepth" value="0.0" step="0.01" />
+		<!--
+		<br />Container height (px): <input type="number" name="outerHeight" value="0" step="1" />
+		<br />Chart area height (px): <input type="number" name="chartHeight" value="0" />
+		-->
+		<br />Chart height (mm): <input type="number" name="chartHeightmm" value="0" step="1" class="autoscale" />
+		<br />Chart scale 1:<input name="chartScale" value="0" step="1" class="autoscale" />
+	</fieldset>
+
+	<fieldset name="VerticalLineChart">
+		<legend>XY chart</legend>
+		<div class="data-column-selector">Select data columns</div>
+
+		<br />Width: <input type="number" name="width" />
+		<select name="pointType">
+			<option value="circle">Dot</option>
+			<option value="rect">Square</option>
+		</select>
+	</fieldset>
+
+
+	<fieldset name="SingleOccurrenceChart">
+		<legend>Fossil range chart</legend>
+		<div class="data-column-selector">Select data columns</div>
+		<br />Width: <input type="number" name="width" />
+	</fieldset>
+
+	<br />
+	<input type="button" name="refresh" value="Refresh" />
+	<input type="button" name="download" value="Download as SVG" style="width:150px"/>
+
+</form>
+
+<div class="flog2_form_collapser">
+	<div class="flog2_form_collapser_floater"></div>
+	<div class="flog2_form_collapser_btn">&nbsp;<</div>
+</div>
+
+<!-- Chart container div -->
+<div class="chart" style="height:100%"></div>
+
+<!-- Hidden <FORM> to submit the SVG data to the server, which will convert it to SVG/PDF/PNG downloadable file.
+     The form is populated and submitted by the JavaScript below. 
+	form to save svg from http://d3export.housegordon.org --> 
+<form id="svgform" method="post" action="/cgi-bin/svg-download.cgi">
+	<input type="hidden" id="output_format" name="output_format" value="" />
+	<input type="hidden" id="data" name="data" value="" />
+</form>
+
+<!-- Load external js resources -->
+<script src="d3/d3.js" charset="utf-8"></script>
+<script src="build/flog2.js"></script>
+<!--script src="src/Flog2.js"></script>
+<script src="src/Flog2.DataFormatter.js"></script>
+<script src="src/Flog2.Renderer.js"></script>
+<script src="src/Flog2.Axis.js"></script>
+<script src="src/Flog2.AxisDefault.js"></script>
+<script src="src/Flog2.AxisSample.js"></script>
+<script src="src/Flog2.AxisSectionBox.js"></script>
+<script src="src/Flog2.AxisStratigraphy.js"></script>
+<script src="src/Flog2.SlidingGuideLine.js"></script>
+<script src="src/Flog2.VerticalLineChart.js"></script>
+<script src="src/Flog2.SingleOccurrenceChart.js"></script-->
+<script src="flog2_form.js"></script>
+
+<script type="text/javascript">
+
+var flog2_form = flog2_form||{};
+
+// Asyncronous data load from file. 
+// After data is loaded, initiate chart object
+d3.tsv(document.location.href.replace("/index.html","")+"/data/data.txt", function(d) {
+	flog2_form.f2obj = new Flog2({
+		title: "Viki section, Saaremaa, W Estonia", 
+		name: "test",
+		parent: ".chart",
+		hooks: {"after_redraw": ["flog2_form.resize_hook"]}, 
+		//width: 500, 
+		//height: 600, 
+		//height: "100%",
+		//scale: "1:10000",
+		//chartHeight: 500,
+		//subChartAreaInnerPadding: 10,
+		headerHeight: 50,
+		footerHeight: 0,
+		axes: [{type: "AxisStratigraphy", src: "data/stratigraphy.txt"},
+            {type: "AxisDefault"},
+            {type: "AxisDrillcoreBox", 
+                src: "http://api.geokogud.info/drillcore_box/?callback=callback&format=jsonp&fp={%22drillcore_id%22:[{%22exact%22:%22236%22}],%22depth_start%22:[{%22gt%22:%22-1%22}]}", 
+                dataType: "jsonp", 
+                cols: {depth_top: "depth_start", depth_base: "depth_end"},
+                link: function(d){window.open("http://geokogud.info/corebox/"+d.drillcore_id, "_blank", "width=500,height=400")} },
+            {type: "AxisSectionBox"},
+            {type: "AxisSample", 
+                link: function(d){window.open("http://geokogud.info/sample/"+d.ID, "_blank", "width=500,height=600,scrollbars=1")}}
+        ],
+		guides: [{type: "SlidingGuideLine"}],
+		dataDelimiter: "\t",
+		charts: [
+		{
+			title: "MgO (%)",
+			footerHeight: 50,
+			column: "MgO (%)",
+			type: "VerticalLineChart",
+			width: 150
+		},
+		{
+			title: "Al2O3 (%)",
+			footerHeight: 50,
+			column: "Al2O3 (%)",
+			type: "VerticalLineChart",
+			width: 150
+		},
+		{
+			title: "delta13C [permil]",
+			footerHeight: 50,
+			column: "delta13C [permil]",
+			type: "VerticalLineChart",
+			width: 150
+		},
+		{
+			title: "Conochitina cucumis",
+			footerHeight: 50,
+			column: "Conochitina cucumis",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Laufeldochitina striata",
+			footerHeight: 50,
+			column: "Laufeldochitina striata",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Conochitina clavaherculi",
+			footerHeight: 50,
+			column: "Conochitina clavaherculi",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Laufeldochitina stentor",
+			footerHeight: 50,
+			column: "Laufeldochitina stentor",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Eisenackitina rhenana",
+			footerHeight: 50,
+			column: "Eisenackitina rhenana",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Armoricochitina granulifera",
+			footerHeight: 50,
+			column: "Armoricochitina granulifera",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},		
+		{
+			title: "Lagenochitina dalbyensis",
+			footerHeight: 50,
+			column: "Lagenochitina dalbyensis",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Belonechitina hirsuta",
+			footerHeight: 50,
+			column: "Belonechitina hirsuta",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Spinachitina cervicornis",
+			footerHeight: 50,
+			column: "Spinachitina cervicornis",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Angochitina multiplex",
+			footerHeight: 50,
+			column: "Angochitina multiplex",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Armoricochitina reticulifera",
+			footerHeight: 50,
+			column: "Armoricochitina reticulifera",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Saharochitina fungiformis",
+			footerHeight: 50,
+			column: "Saharochitina fungiformis",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Tanuchitina bergstroemi",
+			footerHeight: 50,
+			column: "Tanuchitina bergstroemi",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},		
+		{
+			title: "Conochitina rugata",
+			footerHeight: 50,
+			column: "Conochitina rugata",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Tanuchitina anticostiensis",
+			footerHeight: 50,
+			column: "Tanuchitina anticostiensis",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Belonechitina postrobusta",
+			footerHeight: 50,
+			column: "Belonechitina postrobusta",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Euconochitina electa",
+			footerHeight: 50,
+			column: "Euconochitina electa",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Conochitina iklaensis",
+			footerHeight: 50,
+			column: "Conochitina iklaensis",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Conochitina alargada",
+			footerHeight: 50,
+			column: "Conochitina alargada",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Eisenackitina dolioliformis",
+			footerHeight: 50,
+			column: "Eisenackitina dolioliformis",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},		{
+			title: "Angochitina longicollis",
+			footerHeight: 50,
+			column: "Angochitina longicollis",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Conochitina acuminata",
+			footerHeight: 50,
+			column: "Conochitina acuminata",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Margachitina margaritana",
+			footerHeight: 50,
+			column: "Margachitina margaritana",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Conochitina mamilla",
+			footerHeight: 50,
+			column: "Conochitina mamilla",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		],
+		/*
+		charts:[
+
+			{
+				title: "Al2O3 (%)",
+				name: "Al2O3",
+				type: "F2VerticalLineChart",
+				pointType: "circle",
+				pointSize: 2.5,
+				column: "Al2O3 (%)",
+				width: 100
+			},
+			{
+				title: "CaO (%)",
+				name: "CaO",
+				pointType: "circle",
+				pointSize: 2.5,
+				type: "F2VerticalLineChart",
+				column: "CaO (%)"
+			},
+			{
+				title: "MgO (%)",
+				name: "MgO",
+				pointType: "circle",
+				pointSize: 2.5,
+				type: "F2VerticalLineChart",
+				column: "MgO (%)"
+			},			
+			{
+				title: "delta13C [permil]",
+				name: "delta13C",
+				pointType: "circle",
+				pointSize: 2.5,
+				type: "F2VerticalLineChart",
+				column: "delta13C [permil]"
+			},
+		]
+		*/
+	}, d);
+
+    // Add form controls
+	flog2_form.init();
+});
+</script>
+</body>
+</html>

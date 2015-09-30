@@ -1,0 +1,11 @@
+.flog2-chart-link {
+    fill: #4D4D4D;
+    cursor:pointer;
+}
+
+.flog2-chart-link:hover {
+    fill: #265582;
+    text-shadow: 0px 0px 2px #fff;
+    text-decoration: underline;
+
+}
