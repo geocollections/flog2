@@ -68,7 +68,7 @@ Flog2.SingleOccurrenceChart = (function(base) {
         this.depthTop = false;
         this.depthBase = false;
         for(var i=0,n=this.data.length; i<n; i++) {
-            if(this.data[i][this.column] > 0) {
+            if(this.data[i][this.column] != 0) {
                 if(!this.depthTop)
                     this.depthTop = this.data[i].depth < this.minDepth ? this.minDepth : (this.data[i].depth > this.maxDepth ? this.maxDepth : this.data[i].depth);
                 this.depthBase = this.data[i].depth < this.minDepth ? this.minDepth : (this.data[i].depth > this.maxDepth ? this.maxDepth : this.data[i].depth);
@@ -103,7 +103,7 @@ Flog2.SingleOccurrenceChart = (function(base) {
             .attr("height", 6)
             .attr("class", "chart-occurrence-rect")
             .attr("style", function(d){
-                 return t.styles["chart-occurrence-rect"+(d.n==2 ? "-filled" : "")]
+                 return t.styles["chart-occurrence-rect"+(d.n<0 ? "-filled" : "")]
             });
         this.dom.rects.exit().remove();
         depths.length = 0;
