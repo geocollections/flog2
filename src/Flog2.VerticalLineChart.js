@@ -111,8 +111,10 @@ Flog2.VerticalLineChart = (function(base) {
         // as event target on redraw
         // Also skip calculation when draw event 
         // occurs in the form of holding mousedown
-        if(d3.event == null || "function" === typeof d3.event.target 
-        || this.isMouseDown)
+        if(d3.event == null 
+        || "function" === typeof d3.event.target 
+        || this.isMouseDown
+        || this.labelData.length == 0)
             return;
         this.labelLastY = this.offsetY(d3.event);
         this.dom.label_g.attr("display", null);
@@ -232,8 +234,8 @@ Flog2.VerticalLineChart = (function(base) {
         this.data = this.data.filter(function(d){
              // Is string empty? And inside depth limits
             if(!!d[this.column]) { 
-                if(+d.depth > this.minDepth
-                && +d.depth < this.maxDepth) {
+                if(+d.depth >= this.minDepth
+                && +d.depth <= this.maxDepth) {
                     if(this.maxValue < +d[this.column])
                         this.maxValue = +d[this.column];
                     if(this.minValue > +d[this.column])
@@ -274,7 +276,6 @@ Flog2.VerticalLineChart = (function(base) {
     VerticalLineChart.prototype.render = function () {
         this.dataFormatter();
         this.X = this.scaler(0, this.width, this.minValue, this.maxValue);
-        this.setLabelPoints();
 
         var t = this,
             row_ = [],
@@ -304,6 +305,7 @@ Flog2.VerticalLineChart = (function(base) {
         }
 
         this.X = this.scaler(0, this.width, this.minValue, this.maxValue);
+        this.setLabelPoints();
 
         this.path = d3.svg.line()
             .x(function(d){return t.X(+d[t.column])})
@@ -457,9 +459,9 @@ Flog2.VerticalLineChart = (function(base) {
         this.dom.path.selectAll("path").remove();
         this.dom.path.remove();
         this.dom.points.selectAll(".vlc-point").remove();
-        this.dom.listener.remove();
-        this.dom.content
+        this.dom.listener
             .on(".vlc", null);
+        this.dom.listener.remove();
         this.dom.content.remove();
         this.dom.module.remove();
         this.data=null;

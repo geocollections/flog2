@@ -1,7 +1,11 @@
 /**
-Flog2 chart rendering library for D3.js
-TUT Institute of Geology 2015
-Build: K 30 sept 2015 19:50:19 EEST
+Flog2
+
+@description: Chart library for displaying geologic data
+Institute of Geology at Tallinn University of Technology
+http://www.gi.ee
+
+Build: K 07 okt 2015 16:15:29 EEST
 */
 
 
@@ -179,10 +183,10 @@ Flog2 = (function(){
     Calculates chart scale.
     */
     Flog2.prototype.getChartScale = function () {
-        var h = this.chartHeight,
-            depth_irl = this.maxDepth - this.minDepth,
-            chHeight_mm = this.px2mm(h);//h / this.etalon;
-        return Math.abs(Math.round((depth_irl*1000)/chHeight_mm));
+        var scale = Math.abs(Math.round((
+                (this.maxDepth - this.minDepth)*1000) / 
+                this.px2mm(this.chartHeight)));
+        return scale == 0 ? 1 : scale;
     }
 
     /** 
@@ -253,7 +257,7 @@ Flog2 = (function(){
 /**
 Flog2.DataFormatter
 -------------------
-Function that reformats
+Function that re-formats input data
 Used in the first phases of rendering pipeline
 as well as when input dataset is changed and chart is redrawn.
 Formatter used is specified in config object 
@@ -521,7 +525,7 @@ Flog2.Renderer = (function(base, dataformatter) {
         // Get Guides
         if(this.guides.length > 0) {
             this.initObjects("guides");
-            this.guideIterator();
+            this.setGuides();
         }
         
         // Add chart title
@@ -585,12 +589,12 @@ Flog2.Renderer = (function(base, dataformatter) {
 
         this.setProportions();
 
-        //this.chartScale = this.getChartScale();
+        this.chartScale = this.getChartScale();
         this.dom.title
             .attr("x", this.width / 2)
             .text(this.title + " (1:" +this.chartScale+")");
 
-        this.guideIterator();
+        this.setGuides();
 
         this.doHooks("after_redraw");
     }
@@ -886,7 +890,7 @@ Flog2.Renderer = (function(base, dataformatter) {
     /**
     Render guide array
     */
-    Renderer.prototype.guideIterator = function () {
+    Renderer.prototype.setGuides = function () {
         for(var i=0, n=this.guides.length; i<n; i++) {
              this.setGuide(this.guides[i]);
         }
@@ -906,27 +910,17 @@ Flog2.Renderer = (function(base, dataformatter) {
     }
 
     /**
-    Test whether chart limits are reached
-    */
-    Renderer.prototype.eventZoomScaleLimit = function () {
-        var h = document
-            .getElementsByClassName("axis_default")[0]
-            .getBBox().height;
-        return (h / this.etalon > (this.maxDepth - this.minDepth) * 1000);
-    }
-
-    /**
     Zoom handler
     */
     Renderer.prototype.eventZoomHandler = function () {
-        var od = [this.minDepth, this.maxDepth];
-        this.minDepth = this.Y.domain()[0];
-        this.maxDepth = this.Y.domain()[1];
-
-        if(this.eventZoomScaleLimit()) {
-            this.Y.domain([od[0], od[1]]).range([0, this.chartHeight]);
+        // Avoid going below 1:1 with scaling 
+        if(Math.floor(this.chartScale) <= 1 
+        && this.zoom.scale() >= 1) {
             return;
         }
+        this.minDepth = this.Y.domain()[0];
+        this.maxDepth = this.Y.domain()[1];
+         
         this.redraw();
         this.zoom.y(this.Y);
     }
@@ -957,6 +951,7 @@ Flog2.Renderer = (function(base, dataformatter) {
             this.maxDepth = this.oMaxDepth;
             this.minDepth = this.maxDepth - this.extent;
         }
+
         this.redraw();
     }
 
@@ -1263,8 +1258,8 @@ Flog2.AxisSample = (function(base){
     AxisSample.prototype.render = function() {
         var t=this;
 
-        this.dom.rects = this.dom.rects.data(this.data),
-        this.dom.rects.enter().append("rect"),
+        this.dom.rects = this.dom.rects.data(this.data);
+        this.dom.rects.enter().append("rect");
         this.dom.rects
             .attr("x", function(d, i){
                     return (isNaN(d["_sample_step"]) ? 1 : d["_sample_step"]) * t.markerWidth})
@@ -1463,14 +1458,9 @@ Flog2.AxisStratigraphy = (function(base) {
         this.dom.rects.enter().append("rect")
             
         this.dom.rects
-            //.filter(function(d){
-            //    return 0 <= (t.scale(+d.depth_base) > t.scale(t.maxDepth) ? t.scale(t.maxDepth) : t.scale(+d.depth_base)) - 
-            //        (t.scale(+d.depth_top) < 0 ? 0 : t.scale(+d.depth_top)); 
-            //})
             .attr("x", function(d){
                 if(+d.level > maxLevel) 
                     maxLevel = +d.level;
-                //if(isNaN((+d.level-1) * t.cellWidth))console.log((+d.level-1) * t.cellWidth);
                 return (+d.level-1) * t.cellWidth;
             })
             .attr("y", function(d){
@@ -1723,14 +1713,6 @@ Flog2.SlidingGuideLine = (function(base) {
         this.style(c.styles);
         this.dom = {module:null, line:null, label:null};
         this.mp = [0,0];
-
-        // Event hooks
-        //this.events = {
-        //    container: {
-        //        "mousemove.slider": this.eventSlider.bind(this),
-        //        "mouseout.slider": this.eventSlider.bind(this)
-        //    }
-        //}
     }
 
     SlidingGuideLine.prototype.eventSlider = function() {
@@ -1784,10 +1766,8 @@ Flog2.SlidingGuideLine = (function(base) {
 
     */
     SlidingGuideLine.prototype.redraw = function() {
-        this.dom.module.select(".sliding-guideline")
-            .attr("x2", this.width);
-        this.dom.module.select(".sliding-guide-depthtext")
-            .attr("x", this.width+2);
+        this.dom.line.attr("x2", this.width);
+        this.dom.label.attr("x", this.width+2);
         // bring sliding guideline to front
         if(this.dom.module[0][0])
             this.dom.module[0][0].parentNode.appendChild(this.dom.module[0][0]);
@@ -1909,8 +1889,10 @@ Flog2.VerticalLineChart = (function(base) {
         // as event target on redraw
         // Also skip calculation when draw event 
         // occurs in the form of holding mousedown
-        if(d3.event == null || "function" === typeof d3.event.target 
-        || this.isMouseDown)
+        if(d3.event == null 
+        || "function" === typeof d3.event.target 
+        || this.isMouseDown
+        || this.labelData.length == 0)
             return;
         this.labelLastY = this.offsetY(d3.event);
         this.dom.label_g.attr("display", null);
@@ -2030,8 +2012,8 @@ Flog2.VerticalLineChart = (function(base) {
         this.data = this.data.filter(function(d){
              // Is string empty? And inside depth limits
             if(!!d[this.column]) { 
-                if(+d.depth > this.minDepth
-                && +d.depth < this.maxDepth) {
+                if(+d.depth >= this.minDepth
+                && +d.depth <= this.maxDepth) {
                     if(this.maxValue < +d[this.column])
                         this.maxValue = +d[this.column];
                     if(this.minValue > +d[this.column])
@@ -2072,7 +2054,6 @@ Flog2.VerticalLineChart = (function(base) {
     VerticalLineChart.prototype.render = function () {
         this.dataFormatter();
         this.X = this.scaler(0, this.width, this.minValue, this.maxValue);
-        this.setLabelPoints();
 
         var t = this,
             row_ = [],
@@ -2102,6 +2083,7 @@ Flog2.VerticalLineChart = (function(base) {
         }
 
         this.X = this.scaler(0, this.width, this.minValue, this.maxValue);
+        this.setLabelPoints();
 
         this.path = d3.svg.line()
             .x(function(d){return t.X(+d[t.column])})
@@ -2255,9 +2237,9 @@ Flog2.VerticalLineChart = (function(base) {
         this.dom.path.selectAll("path").remove();
         this.dom.path.remove();
         this.dom.points.selectAll(".vlc-point").remove();
-        this.dom.listener.remove();
-        this.dom.content
+        this.dom.listener
             .on(".vlc", null);
+        this.dom.listener.remove();
         this.dom.content.remove();
         this.dom.module.remove();
         this.data=null;

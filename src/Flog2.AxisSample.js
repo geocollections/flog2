@@ -90,8 +90,8 @@ Flog2.AxisSample = (function(base){
     AxisSample.prototype.render = function() {
         var t=this;
 
-        this.dom.rects = this.dom.rects.data(this.data),
-        this.dom.rects.enter().append("rect"),
+        this.dom.rects = this.dom.rects.data(this.data);
+        this.dom.rects.enter().append("rect");
         this.dom.rects
             .attr("x", function(d, i){
                     return (isNaN(d["_sample_step"]) ? 1 : d["_sample_step"]) * t.markerWidth})

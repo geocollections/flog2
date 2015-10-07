@@ -20,14 +20,6 @@ Flog2.SlidingGuideLine = (function(base) {
         this.style(c.styles);
         this.dom = {module:null, line:null, label:null};
         this.mp = [0,0];
-
-        // Event hooks
-        //this.events = {
-        //    container: {
-        //        "mousemove.slider": this.eventSlider.bind(this),
-        //        "mouseout.slider": this.eventSlider.bind(this)
-        //    }
-        //}
     }
 
     SlidingGuideLine.prototype.eventSlider = function() {
@@ -81,10 +73,8 @@ Flog2.SlidingGuideLine = (function(base) {
 
     */
     SlidingGuideLine.prototype.redraw = function() {
-        this.dom.module.select(".sliding-guideline")
-            .attr("x2", this.width);
-        this.dom.module.select(".sliding-guide-depthtext")
-            .attr("x", this.width+2);
+        this.dom.line.attr("x2", this.width);
+        this.dom.label.attr("x", this.width+2);
         // bring sliding guideline to front
         if(this.dom.module[0][0])
             this.dom.module[0][0].parentNode.appendChild(this.dom.module[0][0]);

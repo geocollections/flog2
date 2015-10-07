@@ -173,10 +173,10 @@ Flog2 = (function(){
     Calculates chart scale.
     */
     Flog2.prototype.getChartScale = function () {
-        var h = this.chartHeight,
-            depth_irl = this.maxDepth - this.minDepth,
-            chHeight_mm = this.px2mm(h);//h / this.etalon;
-        return Math.abs(Math.round((depth_irl*1000)/chHeight_mm));
+        var scale = Math.abs(Math.round((
+                (this.maxDepth - this.minDepth)*1000) / 
+                this.px2mm(this.chartHeight)));
+        return scale == 0 ? 1 : scale;
     }
 
     /** 

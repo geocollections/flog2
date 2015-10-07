@@ -165,7 +165,7 @@ Flog2.Renderer = (function(base, dataformatter) {
         // Get Guides
         if(this.guides.length > 0) {
             this.initObjects("guides");
-            this.guideIterator();
+            this.setGuides();
         }
         
         // Add chart title
@@ -229,12 +229,12 @@ Flog2.Renderer = (function(base, dataformatter) {
 
         this.setProportions();
 
-        //this.chartScale = this.getChartScale();
+        this.chartScale = this.getChartScale();
         this.dom.title
             .attr("x", this.width / 2)
             .text(this.title + " (1:" +this.chartScale+")");
 
-        this.guideIterator();
+        this.setGuides();
 
         this.doHooks("after_redraw");
     }
@@ -530,7 +530,7 @@ Flog2.Renderer = (function(base, dataformatter) {
     /**
     Render guide array
     */
-    Renderer.prototype.guideIterator = function () {
+    Renderer.prototype.setGuides = function () {
         for(var i=0, n=this.guides.length; i<n; i++) {
              this.setGuide(this.guides[i]);
         }
@@ -550,27 +550,17 @@ Flog2.Renderer = (function(base, dataformatter) {
     }
 
     /**
-    Test whether chart limits are reached
-    */
-    Renderer.prototype.eventZoomScaleLimit = function () {
-        var h = document
-            .getElementsByClassName("axis_default")[0]
-            .getBBox().height;
-        return (h / this.etalon > (this.maxDepth - this.minDepth) * 1000);
-    }
-
-    /**
     Zoom handler
     */
     Renderer.prototype.eventZoomHandler = function () {
-        var od = [this.minDepth, this.maxDepth];
-        this.minDepth = this.Y.domain()[0];
-        this.maxDepth = this.Y.domain()[1];
-
-        if(this.eventZoomScaleLimit()) {
-            this.Y.domain([od[0], od[1]]).range([0, this.chartHeight]);
+        // Avoid going below 1:1 with scaling 
+        if(Math.floor(this.chartScale) <= 1 
+        && this.zoom.scale() >= 1) {
             return;
         }
+        this.minDepth = this.Y.domain()[0];
+        this.maxDepth = this.Y.domain()[1];
+         
         this.redraw();
         this.zoom.y(this.Y);
     }
@@ -601,6 +591,7 @@ Flog2.Renderer = (function(base, dataformatter) {
             this.maxDepth = this.oMaxDepth;
             this.minDepth = this.maxDepth - this.extent;
         }
+
         this.redraw();
     }
 
