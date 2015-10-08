@@ -63,30 +63,36 @@ Flog2.SingleOccurrenceChart = (function(base) {
     /**
 
     */
-    SingleOccurrenceChart.prototype.render = function() {
-        var d=this.data, depths=[];
+    SingleOccurrenceChart.prototype.dataFormatter = function() {
         this.depthTop = false;
         this.depthBase = false;
-        for(var i=0,n=this.data.length; i<n; i++) {
-            if(this.data[i][this.column] != 0) {
-                if(!this.depthTop)
-                    this.depthTop = this.data[i].depth < this.minDepth ? this.minDepth : (this.data[i].depth > this.maxDepth ? this.maxDepth : this.data[i].depth);
-                this.depthBase = this.data[i].depth < this.minDepth ? this.minDepth : (this.data[i].depth > this.maxDepth ? this.maxDepth : this.data[i].depth);
 
-                if(this.data[i].depth <= this.maxDepth && this.data[i].depth >= this.minDepth)
-                    depths.push({depth:this.data[i].depth,n:this.data[i][this.column]});
-            }
-        }
+        this.data = this.data.filter(function(d) {
+            if(d[this.column] == 0) 
+                return false;
+            if(!this.depthTop)
+                this.depthTop = d.depth < this.minDepth ? this.minDepth : (d.depth > this.maxDepth ? this.maxDepth : d.depth);
+            this.depthBase = d.depth < this.minDepth ? this.minDepth : (d.depth > this.maxDepth ? this.maxDepth : d.depth);
 
-        var t=this;    
+            return d.depth <= this.maxDepth && d.depth >= this.minDepth;
+        }.bind(this));
+    }
+
+    /**
+
+    */
+    SingleOccurrenceChart.prototype.render = function() {
+        this.dataFormatter();
+        var t=this;
 
         // lines
         this.dom.line = this.dom.line
-                    .data([{"top":this.depthTop, "base":this.depthBase}]);
+                    .data([{"top": this.depthTop, 
+                           "base": this.depthBase}]);
         this.dom.line.enter().append("line");
         this.dom.line
-            .attr("x1", function(d) {return 3})
-            .attr("x2", function(d) {return 3})
+            .attr("x1", 3)
+            .attr("x2", 3)
             .attr("y1", function(d) {return t.Y(+d.top)})
             .attr("y2", function(d) {return t.Y(+d.base)})
             .attr("class", "chart-occurrence-line")
@@ -94,19 +100,19 @@ Flog2.SingleOccurrenceChart = (function(base) {
         this.dom.line.exit().remove();
 
         // rects
-        this.dom.rects = this.dom.rects.data(depths);
+        this.dom.rects = this.dom.rects.data(this.data);
         this.dom.rects.enter().append("rect");
         this.dom.rects
-            .attr("x", function(d) {return t.offset_left})
-            .attr("y", function(d) {return t.Y(+d.depth)})
+            .attr("x", this.offset_left)
+            .attr("y", function(d) {return t.Y(+d.depth) - 2})
             .attr("width", 6)
             .attr("height", 6)
             .attr("class", "chart-occurrence-rect")
             .attr("style", function(d){
-                 return t.styles["chart-occurrence-rect"+(d.n<0 ? "-filled" : "")]
+                 return t.styles["chart-occurrence-rect"+(d[t.column] < 0 ? "-filled" : "")]
             });
         this.dom.rects.exit().remove();
-        depths.length = 0;
+        
         // bottom text
         this.dom.text
             .attr("transform", "translate(6,"+(this.Y(this.maxDepth)+10)+")rotate(-90)");
