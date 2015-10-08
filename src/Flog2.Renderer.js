@@ -109,7 +109,10 @@ Flog2.Renderer = (function(base, dataformatter) {
         // If no axes specified, add default axes
         if(this.axes.length < 1)
             this.axes = this.axesDefault;    
-
+        // Set isVisible parameter to all axis config
+        for(var i=this.axes.length;i--;) {
+            this.axes[i].isVisible = this.axes[i].isVisible||true;
+        }
         // Set default charts if not configured
         if(this.charts.length < 1) {
             var i=0,j=0,
@@ -444,6 +447,26 @@ Flog2.Renderer = (function(base, dataformatter) {
             this.initObject(type, i);
     }
 
+    /**
+    Hide / show object that has isVisible attribute
+    */
+    Renderer.prototype.toggleObjectVisibility = function (obj) {
+        // If object is visible but has width = 0, get it from 
+        obj.dom.module.attr("display", obj.isVisible ? null : "none");
+        if(obj.isVisible 
+        && obj.width == 0 
+        && obj.oWidth != null) {
+            obj.width = obj.oWidth;
+            obj.oWidth = null;
+        }
+        if(!obj.isVisible 
+        && obj.width != 0 
+        && obj.oWidth == null) {
+            obj.oWidth = obj.width;
+            obj.width = 0;    
+        }
+    }
+
     /** 
     Content object rendering.
     @param {type} - in plural: charts, axes
@@ -478,7 +501,13 @@ Flog2.Renderer = (function(base, dataformatter) {
             obj.dom.module.attr("id", "module-"+obj.id);
             obj.chartId = this.id;
             obj.draw();
+            if("isVisible" in obj)
+                this.toggleObjectVisibility(obj);
         } else {
+            if("isVisible" in obj) {
+                this.toggleObjectVisibility(obj);
+                if(!obj.isVisible) return;
+            }
             obj.redraw();
         }
     }

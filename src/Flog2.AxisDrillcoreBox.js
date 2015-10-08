@@ -18,6 +18,8 @@ Flog2.AxisDrillcoreBox = (function(base) {
 
         this.link = c.link||null;
 
+        this.isVisible = c.isVisible||true;
+
         this.styles = {
             "axis-drillcorebox-rect": "stroke-width:1;stroke:rgb(0,0,0);",
             "axis-drillcorebox-text": "font-family:arial;font-size:10px",
@@ -91,18 +93,17 @@ Flog2.AxisDrillcoreBox = (function(base) {
     
     */
     AxisDrillcoreBox.prototype.draw = function() {
-        var t=this,
-            mimeType=["csv","tsv","json","jsonp","text","xml"],
+        var mimeType=["csv","tsv","json","jsonp","text","xml"],
             cbfn = function(data) {
-                if(data) t.data=data;
-                if(t.cols) t.colRenamer();
+                if(data) this.data=data;
+                if(this.cols) this.colRenamer();
                 
-                t.dom.rects = t.dom.module.selectAll(".axis-drillcorebox-rect");
-                t.dom.texts = t.dom.module.selectAll(".axis-drillcorebox-text");
+                this.dom.rects = this.dom.module.selectAll(".axis-drillcorebox-rect");
+                this.dom.texts = this.dom.module.selectAll(".axis-drillcorebox-text");
 
-                t.render();
-                t.up.redraw();
-            };
+                this.render();
+                this.up.redraw();
+            }.bind(this);
 
         if(mimeType.indexOf(this.dataType) == -1) {
             console.log("Invalid data delimiter code given. Possible values: csv,tsv,json,jsonp,txt,xml");
@@ -116,6 +117,16 @@ Flog2.AxisDrillcoreBox = (function(base) {
     */
     AxisDrillcoreBox.prototype.redraw = function() {
         this.render();
+    }
+
+    /**
+
+    */
+    AxisDrillcoreBox.prototype.remove = function() {
+        this.dom.rects.remove();
+        this.dom.texts.remove();
+        this.dom.module.remove();
+        this.data.length = 0;
     }
 
     return AxisDrillcoreBox;

@@ -27,6 +27,8 @@ Flog2.AxisSample = (function(base){
         this.textAreaWidth = 50;
         this.maxState = 1;
 
+        this.isVisible = c.isVisible||true;
+
         this.styles = {
             "axis-sample-text": "font-family:arial;font-size:10px;cursor:pointer;"
         }

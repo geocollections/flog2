@@ -13,6 +13,8 @@ Flog2.AxisSectionBox = (function(base){
         this.cls = c.cls||"axis_sectionbox";
         this.margins(c.margin||{});
 
+        this.isVisible = c.isVisible||true;
+
         this.styles = {
             "axis-sectionbox-rect": "fill:rgb(200,200,200);stroke-width:1;stroke:rgb(0,0,0)"
         }

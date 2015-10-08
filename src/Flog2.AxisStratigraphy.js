@@ -17,6 +17,8 @@ Flog2.AxisStratigraphy = (function(base) {
         this.data = !c.src && c.data ? c.data : null; // If no external source is given, data array from config object is expected
         this.cols = c.cols||null;                     // {depth_top:"my_depth_top",depth_base:"my_depth_base",level:"my_level"};
 
+        this.isVisible = this.isVisible||true;
+
         this.styles = {
             "axis-stratigraphy-rect": "stroke-width:1;stroke:rgb(0,0,0);",
             "axis-stratigraphy-text": "font-family:arial;font-size:10px",

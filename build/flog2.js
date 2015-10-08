@@ -5,7 +5,7 @@ Flog2
 Institute of Geology at Tallinn University of Technology
 http://www.gi.ee
 
-Build: N 08 okt 2015 10:49:09 EEST
+Build: N 08 okt 2015 18:11:01 EEST
 */
 
 
@@ -469,7 +469,10 @@ Flog2.Renderer = (function(base, dataformatter) {
         // If no axes specified, add default axes
         if(this.axes.length < 1)
             this.axes = this.axesDefault;    
-
+        // Set isVisible parameter to all axis config
+        for(var i=this.axes.length;i--;) {
+            this.axes[i].isVisible = this.axes[i].isVisible||true;
+        }
         // Set default charts if not configured
         if(this.charts.length < 1) {
             var i=0,j=0,
@@ -804,6 +807,26 @@ Flog2.Renderer = (function(base, dataformatter) {
             this.initObject(type, i);
     }
 
+    /**
+    Hide / show object that has isVisible attribute
+    */
+    Renderer.prototype.toggleObjectVisibility = function (obj) {
+        // If object is visible but has width = 0, get it from 
+        obj.dom.module.attr("display", obj.isVisible ? null : "none");
+        if(obj.isVisible 
+        && obj.width == 0 
+        && obj.oWidth != null) {
+            obj.width = obj.oWidth;
+            obj.oWidth = null;
+        }
+        if(!obj.isVisible 
+        && obj.width != 0 
+        && obj.oWidth == null) {
+            obj.oWidth = obj.width;
+            obj.width = 0;    
+        }
+    }
+
     /** 
     Content object rendering.
     @param {type} - in plural: charts, axes
@@ -838,7 +861,13 @@ Flog2.Renderer = (function(base, dataformatter) {
             obj.dom.module.attr("id", "module-"+obj.id);
             obj.chartId = this.id;
             obj.draw();
+            if("isVisible" in obj)
+                this.toggleObjectVisibility(obj);
         } else {
+            if("isVisible" in obj) {
+                this.toggleObjectVisibility(obj);
+                if(!obj.isVisible) return;
+            }
             obj.redraw();
         }
     }
@@ -1157,10 +1186,11 @@ AxisDefault
 Flog2.AxisDefault = (function(Axis){
     extend(Axis, AxisDefault);
 
-    function AxisDefault() {
+    function AxisDefault(c) {
         Axis.call(this, {});
         this.cls = "axis_default";
         this.width = 50; // Only used by chart proportion calculator
+        this.isVisible = c.isVisible||true;
     }
 
     return AxisDefault;
@@ -1194,6 +1224,8 @@ Flog2.AxisSample = (function(base){
 
         this.textAreaWidth = 50;
         this.maxState = 1;
+
+        this.isVisible = c.isVisible||true;
 
         this.styles = {
             "axis-sample-text": "font-family:arial;font-size:10px;cursor:pointer;"
@@ -1361,6 +1393,8 @@ Flog2.AxisSectionBox = (function(base){
         this.cls = c.cls||"axis_sectionbox";
         this.margins(c.margin||{});
 
+        this.isVisible = c.isVisible||true;
+
         this.styles = {
             "axis-sectionbox-rect": "fill:rgb(200,200,200);stroke-width:1;stroke:rgb(0,0,0)"
         }
@@ -1427,6 +1461,8 @@ Flog2.AxisStratigraphy = (function(base) {
         this.dataType = c.dataType||"tsv";            // Data type if 
         this.data = !c.src && c.data ? c.data : null; // If no external source is given, data array from config object is expected
         this.cols = c.cols||null;                     // {depth_top:"my_depth_top",depth_base:"my_depth_base",level:"my_level"};
+
+        this.isVisible = this.isVisible||true;
 
         this.styles = {
             "axis-stratigraphy-rect": "stroke-width:1;stroke:rgb(0,0,0);",
@@ -1588,6 +1624,8 @@ Flog2.AxisDrillcoreBox = (function(base) {
 
         this.link = c.link||null;
 
+        this.isVisible = c.isVisible||true;
+
         this.styles = {
             "axis-drillcorebox-rect": "stroke-width:1;stroke:rgb(0,0,0);",
             "axis-drillcorebox-text": "font-family:arial;font-size:10px",
@@ -1661,18 +1699,17 @@ Flog2.AxisDrillcoreBox = (function(base) {
     
     */
     AxisDrillcoreBox.prototype.draw = function() {
-        var t=this,
-            mimeType=["csv","tsv","json","jsonp","text","xml"],
+        var mimeType=["csv","tsv","json","jsonp","text","xml"],
             cbfn = function(data) {
-                if(data) t.data=data;
-                if(t.cols) t.colRenamer();
+                if(data) this.data=data;
+                if(this.cols) this.colRenamer();
                 
-                t.dom.rects = t.dom.module.selectAll(".axis-drillcorebox-rect");
-                t.dom.texts = t.dom.module.selectAll(".axis-drillcorebox-text");
+                this.dom.rects = this.dom.module.selectAll(".axis-drillcorebox-rect");
+                this.dom.texts = this.dom.module.selectAll(".axis-drillcorebox-text");
 
-                t.render();
-                t.up.redraw();
-            };
+                this.render();
+                this.up.redraw();
+            }.bind(this);
 
         if(mimeType.indexOf(this.dataType) == -1) {
             console.log("Invalid data delimiter code given. Possible values: csv,tsv,json,jsonp,txt,xml");
@@ -1686,6 +1723,16 @@ Flog2.AxisDrillcoreBox = (function(base) {
     */
     AxisDrillcoreBox.prototype.redraw = function() {
         this.render();
+    }
+
+    /**
+
+    */
+    AxisDrillcoreBox.prototype.remove = function() {
+        this.dom.rects.remove();
+        this.dom.texts.remove();
+        this.dom.module.remove();
+        this.data.length = 0;
     }
 
     return AxisDrillcoreBox;
@@ -2281,7 +2328,7 @@ Flog2.SingleOccurrenceChart = (function(base) {
         }
         this.style(c.styles);
 
-        this.dom = {module:null, content:null, text:null, line:null, recrs:null};
+        this.dom = {module:null, content:null, text:null, lines:null, recrs:null};
     }
 
     /**
@@ -2314,13 +2361,13 @@ Flog2.SingleOccurrenceChart = (function(base) {
 
     */
     SingleOccurrenceChart.prototype.dataFormatter = function() {
-        this.depthTop = false;
-        this.depthBase = false;
+        this.depthTop = null;
+        this.depthBase = null;
 
         this.data = this.data.filter(function(d) {
             if(d[this.column] == 0) 
                 return false;
-            if(!this.depthTop)
+            if(this.depthTop == null)
                 this.depthTop = d.depth < this.minDepth ? this.minDepth : (d.depth > this.maxDepth ? this.maxDepth : d.depth);
             this.depthBase = d.depth < this.minDepth ? this.minDepth : (d.depth > this.maxDepth ? this.maxDepth : d.depth);
 
@@ -2336,18 +2383,18 @@ Flog2.SingleOccurrenceChart = (function(base) {
         var t=this;
 
         // lines
-        this.dom.line = this.dom.line
-                    .data([{"top": this.depthTop, 
-                           "base": this.depthBase}]);
-        this.dom.line.enter().append("line");
-        this.dom.line
+        this.dom.lines = this.dom.lines
+            .data([{"top": this.depthTop, 
+                    "base": this.depthBase}]);
+        this.dom.lines.enter().append("line");
+        this.dom.lines
             .attr("x1", 3)
             .attr("x2", 3)
             .attr("y1", function(d) {return t.Y(+d.top)})
             .attr("y2", function(d) {return t.Y(+d.base)})
             .attr("class", "chart-occurrence-line")
             .attr("style", this.styles["chart-occurrence-line"]);
-        this.dom.line.exit().remove();
+        this.dom.lines.exit().remove();
 
         // rects
         this.dom.rects = this.dom.rects.data(this.data);
@@ -2377,10 +2424,10 @@ Flog2.SingleOccurrenceChart = (function(base) {
             .attr("width", this.width)
             .attr("height", this.height);
         
-        this.dom.line = this.dom.content
-                    .selectAll(".chart-occurrence-line");
+        this.dom.lines = this.dom.content
+            .selectAll(".chart-occurrence-line");
         this.dom.rects = this.dom.content
-                    .selectAll(".chart-occurrence-rect");
+            .selectAll(".chart-occurrence-rect");
         this.render();
     }
 

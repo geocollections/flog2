@@ -59,6 +59,9 @@ var flog2_form = flog2_form || {
         // Inject dropdown column selectors to placeholder div(s)
         // with classname ".data-column-selecto" 
         this.addDataColumnSelectorsHTML();
+
+        // Add axis selector
+        this.addAxisSelectorHTML();
     
         // Load F2 chart
         this.run();
@@ -78,7 +81,12 @@ var flog2_form = flog2_form || {
                 if(f_l[j].type == "radio" 
                 && !f_l[j].checked)
                     continue;
-                this.conf[fs_l[i].name][f_l[j].name] = 
+                if(f_l[j].type == "checkbox" 
+                && fs_l[i].name == "axes") {
+                    this.conf[fs_l[i].name][f_l[j].name] = f_l[j].checked;
+                    continue;
+                }
+                this.conf[fs_l[i].name][f_l[j].name] =
                     f_l[j].type === "number" ? +f_l[j].value : f_l[j].value;
             }
         }
@@ -130,7 +138,8 @@ var flog2_form = flog2_form || {
                     this.f2obj.roundScale = true;
                     this.f2obj.chartScale = c.chartScale;
                 }
-
+            } else if (fs == "axes") {
+                this.getAxesVisible(fs);
             } else {
                 this.attachChartsToObject(cols_o, pointer, fs);
                 for(var ck in c) {
@@ -142,7 +151,7 @@ var flog2_form = flog2_form || {
                 }
             }           
         }
-        this.changed=[];
+        this.changed.length = 0;
     },
 
     attachDataStrToObject: function(fs, c) {
@@ -249,6 +258,8 @@ var flog2_form = flog2_form || {
                     inp_l[j].value = this.f2obj[inp_l[j].name];
                     inp_l[j].setAttribute("data-value", this.f2obj[inp_l[j].name]);
                 }
+            } else if(fs == "axes") {
+                this.setAxesVisible(inp_l.reverse());
             } else {
                 // Set data charts that are visible
                 var visibleCharts = {}, chartConf={};
@@ -376,11 +387,39 @@ var flog2_form = flog2_form || {
     },
 
     setChartColumns: function(visibleCharts) {
-        var li_l=this._gid("modal-content").children[0].children,
-            c_l={};
+        var li_l = this._gid("modal-content").children[0].children,
+            c_l = {};
         for(var i=li_l.length;i--;) {
              li_l[i].dataset.type = li_l[i].innerHTML in visibleCharts ? 
                  visibleCharts[li_l[i].innerHTML].join(",") : "";
+        }
+    },
+
+    addAxisSelectorHTML: function() {
+        var pl_l = this._gcls("axes-selector");
+        if(pl_l.length > 0) {
+            // <br /><input /> Label
+            for(var i=0, n = this.f2obj.axes.length; i < n; i++) {
+                var input=document.createElement("input");
+                input.type = "checkbox";
+                input.name = "visible-axis-"+i;
+                
+                input.checked = this.f2obj.axes[i].isVisible;
+                pl_l[0].appendChild(input);
+                pl_l[0].appendChild(document.createTextNode(this.f2obj.axes[i].constructor.name));  
+                pl_l[0].appendChild(document.createElement("br"));
+            }
+        }
+    },
+
+    setAxesVisible: function(inp_l) {
+        for(var i=0,n=inp_l.length;i<n;i++)
+            inp_l[i].checked = this.f2obj.axes[i].isVisible;
+    },
+
+    getAxesVisible: function(fs) {
+        for(var k in this.conf[fs]) {
+            this.f2obj.axes[+(k.replace("visible-axis-",""))].isVisible = this.conf[fs][k];
         }
     },
 
