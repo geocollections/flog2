@@ -1,6 +1,6 @@
 # flog2
 
-Flog2 is javascript-based tool for creating svg charts of measured geological sections, complete with stratigrapy columns, sampling depths, geochemical (or other numeric) data and fossil occurrences. The source data may come from static tab-delimited files, json database APIs or direct user input (copy-paste from Excel or LibreOffice). 
+Flog2 is javascript-based tool for creating svg charts of measured geological sections, complete with stratigraphy columns, core box coverage in case of drill cores, sample depths and identifiers with links to external sources, geochemical (or other numeric) data and fossil occurrences. The source data may come from static tab-delimited files, json database APIs or direct user input (copy-paste from Excel or LibreOffice). 
 
 User has options to set specific scale or chart height, upper and lower depth limits, and select which geochemical parameters and fossil taxa to show. The data can be explored by zooming in and out (changing vertical scale) and dragging up and down using mouse controls. Suitable chart can then be exported as svg file and adjusted and combined for final look in any recent vector drawing (e.g., Inkscape, Adobe Illustrator and CorelDraw).
 
