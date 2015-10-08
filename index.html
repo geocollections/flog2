@@ -143,7 +143,7 @@ d3.tsv(document.location.href.replace("/index.html","")+"/data/data.txt", functi
                 src: "http://api.geokogud.info/drillcore_box/?callback=callback&format=jsonp&fp={%22drillcore_id%22:[{%22exact%22:%22236%22}],%22depth_start%22:[{%22gt%22:%22-1%22}]}", 
                 dataType: "jsonp", 
                 cols: {depth_top: "depth_start", depth_base: "depth_end"},
-                link: function(d){window.open("http://geokogud.info/corebox/"+d.drillcore_id, "_blank", "width=500,height=400")} },
+                link: function(d){window.open("http://geokogud.info/corebox/"+d.id, "_blank", "width=500,height=600,scrollbars=1")} },
             {type: "AxisSectionBox"},
             {type: "AxisSample", 
                 link: function(d){window.open("http://geokogud.info/sample/"+d.ID, "_blank", "width=500,height=600,scrollbars=1")}}
