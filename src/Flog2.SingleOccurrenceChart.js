@@ -21,17 +21,20 @@ Flog2.SingleOccurrenceChart = (function(base) {
         this.footerHeight = c.footerHeight;
         this.maxDepth = c.maxDepth;
         this.minDepth = c.minDepth;
-        this.data = [];
+
+        this.point = c.point||{type:"rect", size:6};
 
         this.styles = {
             "chart-occurrence-text":"transform:rotate(-90);text-anchor:end;font-family:arial;font-size:10px",
             "chart-occurrence-line":"stroke:#000;stroke-width:1px;z-index:100;shape-rendering:crispEdges;",
-            "chart-occurrence-rect":"stroke-width:1;stroke:rgb(0,0,0);shape-rendering: crispEdges;",
-            "chart-occurrence-rect-filled":"fill:#fff;stroke-width:1;stroke:rgb(0,0,0);shape-rendering: crispEdges;"
+            "chart-occurrence-point":"stroke-width:1;stroke:rgb(0,0,0);shape-rendering: crispEdges;",
+            "chart-occurrence-point-filled":"fill:#fff;stroke-width:1;stroke:rgb(0,0,0);shape-rendering: crispEdges;"
         }
         this.style(c.styles);
 
-        this.dom = {module:null, content:null, text:null, line:null, recrs:null};
+        this.data = [];
+
+        this.dom = {module:null, content:null, text:null, lines:null, points:null};
     }
 
     /**
@@ -64,13 +67,13 @@ Flog2.SingleOccurrenceChart = (function(base) {
 
     */
     SingleOccurrenceChart.prototype.dataFormatter = function() {
-        this.depthTop = false;
-        this.depthBase = false;
+        this.depthTop = null;
+        this.depthBase = null;
 
         this.data = this.data.filter(function(d) {
             if(d[this.column] == 0) 
                 return false;
-            if(!this.depthTop)
+            if(this.depthTop == null)
                 this.depthTop = d.depth < this.minDepth ? this.minDepth : (d.depth > this.maxDepth ? this.maxDepth : d.depth);
             this.depthBase = d.depth < this.minDepth ? this.minDepth : (d.depth > this.maxDepth ? this.maxDepth : d.depth);
 
@@ -83,39 +86,52 @@ Flog2.SingleOccurrenceChart = (function(base) {
     */
     SingleOccurrenceChart.prototype.render = function() {
         this.dataFormatter();
+
         var t=this;
 
         // lines
-        this.dom.line = this.dom.line
-                    .data([{"top": this.depthTop, 
-                           "base": this.depthBase}]);
-        this.dom.line.enter().append("line");
-        this.dom.line
-            .attr("x1", 3)
-            .attr("x2", 3)
+        this.dom.lines = this.dom.lines
+            .data([{"top": this.depthTop, 
+                    "base": this.depthBase}]);
+        this.dom.lines.enter().append("line");
+        this.dom.lines
+            .attr("x1", (this.width) / 2)
+            .attr("x2", (this.width) / 2)
             .attr("y1", function(d) {return t.Y(+d.top)})
             .attr("y2", function(d) {return t.Y(+d.base)})
             .attr("class", "chart-occurrence-line")
             .attr("style", this.styles["chart-occurrence-line"]);
-        this.dom.line.exit().remove();
+        this.dom.lines.exit().remove();
 
         // rects
-        this.dom.rects = this.dom.rects.data(this.data);
-        this.dom.rects.enter().append("rect");
-        this.dom.rects
-            .attr("x", this.offset_left)
-            .attr("y", function(d) {return t.Y(+d.depth) - 2})
-            .attr("width", 6)
-            .attr("height", 6)
-            .attr("class", "chart-occurrence-rect")
+        this.dom.points = this.dom.points.data(this.data);
+        this.dom.points.enter().append(this.point.type);
+        if(this.point.type == "rect") {
+            this.dom.points
+                .attr("x", (this.width - this.point.size)/2)
+                .attr("y", function(d) {return t.Y(+d.depth) - (t.point.size / 2)})
+                .attr("width", this.point.size)
+                .attr("height", this.point.size);
+        } else if(this.point.type == "circle") {
+            this.dom.points
+                .attr("cx", this.width / 2)
+                .attr("cy", function(d) {return t.Y(+d.depth)})
+                .attr("r", this.point.size / 2)
+        }
+
+        this.dom.points
+            .attr("class", "chart-occurrence-point")
             .attr("style", function(d){
-                 return t.styles["chart-occurrence-rect"+(d[t.column] < 0 ? "-filled" : "")]
+                 return t.styles["chart-occurrence-point"+(d[t.column] < 0 ? "-filled" : "")]
             });
-        this.dom.rects.exit().remove();
+
+        this.dom.points.exit().remove();
         
         // bottom text
         this.dom.text
-            .attr("transform", "translate(6,"+(this.Y(this.maxDepth)+10)+")rotate(-90)");
+            .attr("transform", "translate("+
+                (this.width/2+2)+
+                ","+(this.Y(this.maxDepth)+10)+")rotate(-90)");
     }
 
     /**
@@ -127,10 +143,10 @@ Flog2.SingleOccurrenceChart = (function(base) {
             .attr("width", this.width)
             .attr("height", this.height);
         
-        this.dom.line = this.dom.content
-                    .selectAll(".chart-occurrence-line");
-        this.dom.rects = this.dom.content
-                    .selectAll(".chart-occurrence-rect");
+        this.dom.lines = this.dom.content
+            .selectAll(".chart-occurrence-line");
+        this.dom.points = this.dom.content
+            .selectAll(".chart-occurrence-point");
         this.render();
     }
 
@@ -145,7 +161,7 @@ Flog2.SingleOccurrenceChart = (function(base) {
     
     */
     SingleOccurrenceChart.prototype.remove = function() {
-        var e=["occurrence-line","occurrence-rect","occurrence-text"];
+        var e=["occurrence-line","occurrence-point","occurrence-text"];
         for(var i=0,n=e.length;i<n;i++)
             this.dom.content.selectAll(".chart-"+e[i]).remove();
         this.dom.content.remove();
