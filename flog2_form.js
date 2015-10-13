@@ -145,9 +145,16 @@ var flog2_form = flog2_form || {
                 for(var ck in c) {
                     if(this.changed.indexOf(fs+"."+ck) === -1)
                         continue;
-                    for(var l=this.f2obj.charts.length;l--;)
+                    for(var l=this.f2obj.charts.length;l--;) {
+                        // Do not reset width for paleontological charts with 
+                        // step values
+                        if("step" in this.f2obj.charts[l] 
+                        && this.f2obj.charts[l].step
+                        && ck == "width") 
+                            continue;
                         if(fs == this.f2obj.charts[l].constructor.name)
                             this.f2obj.charts[l][ck] = c[ck];
+                    }
                 }
             }           
         }
@@ -396,7 +403,7 @@ var flog2_form = flog2_form || {
     },
 
     addAxisSelectorHTML: function() {
-        var pl_l = this._gcls("axes-selector");
+        var pl_l = this._gcls("axes-selector"), t = this;
         if(pl_l.length > 0) {
             // <br /><input /> Label
             for(var i=0, n = this.f2obj.axes.length; i < n; i++) {
@@ -405,6 +412,11 @@ var flog2_form = flog2_form || {
                 input.name = "visible-axis-"+i;
                 
                 input.checked = this.f2obj.axes[i].isVisible;
+                input.addEventListener("click", function(){
+                    var j = this.name.replace("visible-axis-", "");
+                    t.f2obj.axes[+j].isVisible = this.checked;
+                    t.f2obj.redraw();
+                }, false);
                 pl_l[0].appendChild(input);
                 pl_l[0].appendChild(document.createTextNode(this.f2obj.axes[i].constructor.name));  
                 pl_l[0].appendChild(document.createElement("br"));
