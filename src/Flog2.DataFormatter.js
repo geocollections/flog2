@@ -17,52 +17,61 @@ Flog2.DataFormatter = (function() {
     /** Default formatter */
     DataFormatter.prototype.default = function () {
 
-        // Does given dataset include depth_to column
-        var d_= (-1 !== Object.keys(this.data[0]).indexOf("depth_to"));
-        // Walk through dataset
-        for(var i=this.data.length;i--;) {
-            this.data[i]["depth_from"] = this.data[i]["depth"];
-            // If data depth is not "", add it as float
-            if(this.data[i].depth!="") {
-                this.data[i].depth = parseFloat(this.data[i].depth);
-            } else {
-                continue;
-            }
-            
-            if (!d_ || this.data[i]["depth_to"] == "") {
-                this.data[i]["depth_to"] = this.data[i]["depth"];
-            }
-            
-            // Calculate average depth if data contains depth_to column
-            this.data[i]["depth"] = (this.data[i]["depth"] + 
-                    parseFloat(this.data[i]["depth_to"])) / 2;
-        }
+        this.data.forEach(function(d){
+            d.depth_from = d.depth;
+            if(d.depth != "") 
+                d.depth = +d.depth;
+            else return;
+            if(!("depth_to" in d) 
+            || d.depth_to == "")
+                d.depth_to = d.depth;
+            d.depth = (d.depth + (+d.depth_to)) / 2;
+        });
 
         // Set depth limits only on initialization of the chart 
         // or when dataset limits are changed
-        var maxDepth = d3.max(this.data, function(d) { return d.depth; }),
-            minDepth = d3.min(this.data, function(d) { return d.depth; });
-        if(!this._def(this.maxDepth) || maxDepth!=this.oMaxDepth) {
+        var maxDepth = Math.ceil(d3.max(this.data, function(d) { 
+                return d.depth_to > d.depth ? d.depth_to : d.depth; 
+            })),
+            minDepth = Math.floor(d3.min(this.data, function(d) { 
+                return d.depth_from < d.depth ? d.depth_from : d.depth; 
+            }));
+        if(!this._def(this.maxDepth) 
+        || maxDepth != this.oMaxDepth) {
             this.maxDepth = maxDepth;
             this.oMaxDepth = maxDepth;
         }
-        if(!this._def(this.minDepth) || minDepth!=this.oMinDepth) {
+        if(!this._def(this.minDepth) 
+        || minDepth != this.oMinDepth) {
             this.minDepth = minDepth;
             this.oMinDepth = minDepth;
         }
         this.depth = this.maxDepth - this.minDepth;
 
-        this.data.sort(function(a,b){return d3.ascending(a.depth,b.depth);});
+        this.data.sort(function(a, b){return d3.ascending(a.depth, b.depth);});
     }
 
     /**
     Incoming data formatter for chart implementation in chitinozoa.net.
     */
     DataFormatter.prototype.chitinozoa = function () {
-        // Does given dataset include depth_to column
-        var d_= (-1 !== Object.keys(this.data[0]).indexOf("depth_interval"));
+        
         // Walk through dataset
-        for(var i=this.data.length;i--;) {
+        this.data.forEach(function(d){
+            d.depth_from = d.depth;
+            if(d.depth != "") 
+                d.depth = +d.depth;
+            else 
+                return;
+            if(!("depth_interval" in d)
+            || d.depth_interval == "")
+                d.depth_to = d.depth;
+            else 
+                d.depth_to = d.depth_interval;
+
+            d.depth = (d.depth + (+d.depth_interval)) / 2;
+        });
+/*        for(var i=this.data.length;i--;) {
             this.data[i]["depth_from"] = this.data[i]["depth"];
             // If data depth is not "", add it as float
             if(this.data[i].depth!="") {
@@ -71,7 +80,8 @@ Flog2.DataFormatter = (function() {
                 continue;
             }
             
-            if (!d_ || this.data[i]["depth_interval"] == "") {
+            if (!("depth_interval" in this.data[0]) 
+            || this.data[i]["depth_interval"] == "") {
                 this.data[i]["depth_to"] = this.data[i]["depth"];
             } else
                 this.data[i]["depth_to"] = this.data[i]["depth_interval"];
@@ -80,16 +90,18 @@ Flog2.DataFormatter = (function() {
             this.data[i]["depth"] = (this.data[i]["depth"] + 
                     parseFloat(this.data[i]["depth_interval"])) / 2;
         }
-        
+*/        
         // Set depth limits only on initialization of the chart 
         // or when dataset limits are changed
         var maxDepth = d3.max(this.data, function(d) {return d.depth}),
             minDepth = d3.min(this.data, function(d) {return d.depth});
-        if(!this._def(this.maxDepth) || maxDepth!=this.oMaxDepth) {
+        if(!this._def(this.maxDepth) 
+        || maxDepth!=this.oMaxDepth) {
             this.maxDepth = maxDepth;
             this.oMaxDepth = maxDepth;
         }
-        if(!this._def(this.minDepth) || minDepth!=this.oMinDepth) {
+        if(!this._def(this.minDepth) 
+        || minDepth!=this.oMinDepth) {
             this.minDepth = minDepth;
             this.oMinDepth = minDepth;
         }
