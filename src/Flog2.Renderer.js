@@ -8,18 +8,17 @@ Flog2.Renderer = (function(base, dataformatter) {
     /** @constructor  */
     function Renderer (c, data) {
 
-        if(!c || !data) {
-            alert("Flog 2 chart missing: "+(c?"":" *config")+(data?"":" *data"));
+        if(!c){// || !data) {
+            alert("Flog 2 chart missing: "+(c?"":" *config"));//+(data?"":" *data"));
             return;
         }
-        this.c = c||{};                                    // Config object
-        this.data = data;                                  // Input data array
+
+        this.data = data||[];                              // Input data array
         this.dataStr = "";                                 // dataToStr() fills this array
         this.dataDelimiter = c.dataDelimiter||",";         // Data-as-string data delimiter: tab, semicolon, comma
         this.METADATA_COLUMNS = ["ID","sample_id","sample_number","depth","depth_to","depth_from","_F2AxisSampleStep"];
-        this.COLUMNS = d3.keys(data[0]);                   // All column headers array
+        this.COLUMNS = data ? d3.keys(data[0]) : [];                   // All column headers array
         this.DATA_COLUMNS = [];                            // Data column names array
-        this.setDataColumnsList();                         // Fills DATA_COLUMNS array with data column names
 
         this.title = c.title||"Untitled";                  // Chart title
         this.name = c.name||"undefined";                   // Chart name - use [a-z0-9]
@@ -43,19 +42,28 @@ Flog2.Renderer = (function(base, dataformatter) {
         this.headerHeight = c.headerHeight||0;             // Chart header height (optional)
         this.footerHeight = c.footerHeight||0;             // Chart footer height (optional)
 
+        this.maxDepth = c.maxDepth||0;
+        this.minDepth = c.minDepth||0;
+
         this.axes = c.axes||[];
-        this.axesDefault = [                               // If rulers are not specified, use default set of rulers
+        this.axesDefault = [                               
             {type:"AxisDefault"},
             {type:"AxisSectionBox"},
             {type:"AxisSample"}
         ];
+        if(this.axes.length > 0) {
+            this.axesDefault.length = 0;
+            for(var i = 0,n = this.axes.length;i<n;i++)
+                this.axesDefault.push(this.axes[i]);
+        }
 
         this.guides = c.guides||[];                        // Depth Guidelines 
         
         this.charts = c.charts||[];                        // If subchart config is given, use it
+        this.chartsConf = c.chartsConf||{};                // Conf object for chart types
         this.numCharts = c.numCharts||5;                   // Used when chart array is left empty meaning no config is given for charts.
 
-        this.contentPadding = c.contentPadding||20;        // Space between subcharts in px
+        this.spacing = c.spacing||20;                      // Space between subchart blocks in px
         
         this.svg = c.svg||{};                              // If there"s d3 set of svg elements given, include them otherwise empty object
 
@@ -77,59 +85,40 @@ Flog2.Renderer = (function(base, dataformatter) {
 
         this.drag = {};
 
-        this.draw();
+        if(data)
+            this.setDataColumnsList();                         // Fills DATA_COLUMNS array with data column names
+        
+        this.c = deepCopy(this);     // Config object
+        this.oguides=[];
+        for(var i=0,n=this.guides.length;i<n;i++)
+            this.oguides.push(this.guides[i]);      
+
+        if(data) {
+            this.dataToString();
+        }
+        this.draw();        
     }
 
     /** 
-    Get data columns list
+    Get data columns list.
+    If config chart column order differs from 
+    that of input data, reorder input data.
     */
     Renderer.prototype.setDataColumnsList = function () {
         for(var i=0,n=this.COLUMNS.length;i<n;i++)
             if(this.METADATA_COLUMNS.indexOf(this.COLUMNS[i])==-1)
                 this.DATA_COLUMNS.push(this.COLUMNS[i]);
+        // Re-order columns if needed
+        //this.colReorderer();
     }
+    
 
     /** 
     Chart drawing function
     */
     Renderer.prototype.draw = function () {
         // Get etalon value
-        this.getEtalon();
-
-        // Create data string representation
-        this.dataToString();
-
-        // Choose input data formatter method
-        if(!this._def( this["df_"+this.dataFormatter] ))
-            this.dataFormatter = "default";
-        
-        // Call data formatter method
-        this["df_"+this.dataFormatter]();
-
-        // If no axes specified, add default axes
-        if(this.axes.length < 1)
-            this.axes = this.axesDefault;    
-        // Set isVisible parameter to all axis config
-        for(var i=this.axes.length;i--;) {
-            this.axes[i].isVisible = this.axes[i].isVisible||true;
-        }
-        // Set default charts if not configured
-        if(this.charts.length < 1) {
-            var i=0,j=0,
-                n=this.COLUMNS.length;
-            while(i<this.numCharts && j<n) {
-                j++;
-                if(this.METADATA_COLUMNS.indexOf(this.COLUMNS[j-1])!=-1)
-                    continue;
-                this.charts.push({
-                    type: "VerticalLineChart",
-                    title: this.COLUMNS[j-1],
-                    column: this.COLUMNS[j-1],
-                    name: "chart-"+i
-                });
-                i++;
-            }  
-        }
+        //this.getEtalon();
 
         // main elements        
         this.dom.svg = d3.select(this.parent).append("svg")
@@ -146,27 +135,77 @@ Flog2.Renderer = (function(base, dataformatter) {
             .attr("class", "content-listener-filler")
             .style("fill-opacity", 0);
 
+        // Breakpoint if chart is loaded without data
+        if(this.data.length < 1)
+            return;
+
+        // Create data string representation
+        //this.dataToString();
+
+        // Choose input data formatter method
+        if(!this._def( this["df_"+this.dataFormatter] ))
+            this.dataFormatter = "default";
+        
+        // Call data formatter method
+        this["df_"+this.dataFormatter]();
+
+        // If no axes specified, add default axes
+        if(!("axes" in this.c)
+        ||this.c.axes.length < 1) {
+            for(var i=0,n=this.axesDefault.length;i<n;i++)
+                this.axes.push(this.axesDefault[i]);
+        }
+
+        // Set isVisible parameter to all axis config
+        for(var i=this.axes.length;i--;) {
+            this.axes[i].isVisible = this.axes[i].isVisible||true;
+        }
+        // Set default charts if not configured
+        if(this.charts.length < 1) {
+            var i=0,j=0,
+                n=this.COLUMNS.length;
+            while(i < this.numCharts && j < n) {
+                j++;
+                if(this.METADATA_COLUMNS.indexOf(this.COLUMNS[j-1]) != -1)
+                    continue;
+                this.charts.push({
+                    type: "VerticalLineChart",
+                    title: this.COLUMNS[j-1],
+                    column: this.COLUMNS[j-1],
+                    name: "chart-"+i
+                });
+                i++;
+            }  
+        }
+
         // Create content objects so their default
         // config parameters such as
         // dimensions (header, footer) could be read.
         // TODO: Also hooks could be included in content
         // object constructor.
+
         this.initObjects("axes");
         this.initObjects("charts");
-        
-      
 
         // Calculate widths and lengths
         this.getProportions();
 
         // Set content vertical offset
-        this.dom.content.attr("transform", "translate(0,"+this.contentOffsetTop+")");
-        
+        this.dom.content.attr(
+            "transform", 
+            "translate(0,"+this.contentOffsetTop+")"
+        );
+     
         this.setObjects("axes");
         this.setObjects("charts");
 
+        this.reposition();
+
         // Get Guides
-        if(this.guides.length > 0) {
+        if(this.oguides.length > 0) {
+            this.guides.length = 0;
+            for(var i=0,n=this.oguides.length;i<n;i++)
+                this.guides.push(this.oguides[i]);
             this.initObjects("guides");
             this.setGuides();
         }
@@ -186,22 +225,37 @@ Flog2.Renderer = (function(base, dataformatter) {
             .call(this.zoom)
             .on("mousedown.zoom", null)
             //.on("touchstart.zoom", null)
-            //.on("touchmove.zoom", null)
+            .on("touchmove.zoom", 
+                function(e){e.preventDefault();})
             //.on("touchend.zoom", null);
-            .on("mousedown.drag", this.eventDragStart.bind(this))
-            .on("mousemove.drag", this.eventDrag.bind(this))
-            .on("mouseup.drag", function(){this.drag.depth = null}.bind(this))
+            .on("mousedown.drag", 
+                this.eventDragStart.bind(this))
+            .on("mousemove.drag", 
+                this.eventDrag.bind(this))
+            .on("mouseup.drag", 
+                function(){this.drag.depth = null}.bind(this))
+        if(this.guides.length > 0)
+            this.dom.content
+                .on("mouseout.slider", 
+                    this.guides[0].eventSlider.bind(this.guides[0]))
+                .on("mousemove.slider", 
+                    this.guides[0].eventSlider.bind(this.guides[0]));
 
-            .on("mouseout.slider", this.guides[0].eventSlider.bind(this.guides[0]))
-            .on("mousemove.slider", this.guides[0].eventSlider.bind(this.guides[0]));
-            
-        window.addEventListener("beforeunload", this.remove.bind(this), false);
+        window.addEventListener("beforeunload", 
+            this.remove.bind(this), false);
     }
 
     /**
     Redraw Flog2 chart
     */
     Renderer.prototype.redraw = function () {
+        // If there's no data provided, 
+        // remove chart elements
+        if(this.data.length < 1) {
+            this.remove();
+            return;
+        }
+
         this.doHooks("before_redraw");
 
         if(isNaN(this.chartHeightmm))
@@ -223,26 +277,27 @@ Flog2.Renderer = (function(base, dataformatter) {
 
         this.getProportions();
 
-        this.Y
-            .range([0, this.chartHeight])
-            .domain([this.minDepth, this.maxDepth]);
+        this.dom.content.attr(
+            "transform", 
+            "translate(0,"+this.contentOffsetTop+")"
+        );
 
         this.setObjects("axes");
         this.setObjects("charts");
 
-        this.setProportions();
+        this.reposition();
 
         this.chartScale = this.getChartScale();
         this.dom.title
             .attr("x", this.width / 2)
-            .text(this.title + " (1:" +this.chartScale+")");
+            .text(this.title + " (1:"+this.chartScale+")");
 
         this.setGuides();
-
         this.doHooks("after_redraw");
     }
 
     Renderer.prototype.getHeights = function () {
+
         // this.contentOffsetTop represents content offset from top
         this.contentOffsetTop = this.headerHeight + this.maxHeaderHeight;
 
@@ -294,7 +349,7 @@ Flog2.Renderer = (function(base, dataformatter) {
         this.contentHeight = this.height - this.contentOffsetTop;
 
         // If scale is not round, round it
-        if(this.roundScale 
+        if(this.roundScale && !isNaN(this.chartScale)
         && this.chartScale % 1 !== 0) {
             this.chartScale = Math.round(this.chartScale);
             this.getHeights();
@@ -307,7 +362,6 @@ Flog2.Renderer = (function(base, dataformatter) {
     Renderer.prototype.getProportions = function () {
 
         // WIDTH
-
         this.width = 0;
 
         // Content overall width excludes inner padding
@@ -341,9 +395,10 @@ Flog2.Renderer = (function(base, dataformatter) {
                 (c.margin.right||0);
 
             var isSOC = c.constructor.name == "SingleOccurrenceChart";
+
             // Use padding only before block of SOC charts
             if(!isSOC || (isSOC && !flag)) 
-                this.width += this.contentPadding;
+                this.width += this.spacing;
             if(isSOC && !flag) flag = true;
         }
 
@@ -352,7 +407,6 @@ Flog2.Renderer = (function(base, dataformatter) {
                           (this.margin.right||0);
 
         // HEIGHT
-
         this.getHeights();
 
         // Depth axis scale
@@ -365,17 +419,7 @@ Flog2.Renderer = (function(base, dataformatter) {
     /** 
     Re-position content modules after re-configuring the chart area
     */
-    Renderer.prototype.setProportions = function () {
-        // Set outmost containers' dimensions
-        this.dom.svg
-            .attr("width", this.outerWidth)
-            .attr("height", this.outerHeight);
-        this.dom.content
-            .attr("width", this.width)
-            .attr("height", this.height);
-        d3.select(".content-listener-filler")
-            .attr("width", this.width)
-            .attr("height", this.height-this.contentOffsetTop);
+    Renderer.prototype.reposition = function () {
         // Re-position axis modules
         var offset_left = 0;
         for(var i=0,n=this.axes.length;i<n;i++) {
@@ -388,16 +432,35 @@ Flog2.Renderer = (function(base, dataformatter) {
         // Re-position chart modules
         this.axesAreaWidth=offset_left;
         for(var i=0, n = this.charts.length; i<n; i++) {
-            if(this.charts[i].constructor.name != "SingleOccurrenceChart" 
-            || (i!=0 && this.charts[i-1].constructor.name != "SingleOccurrenceChart"))
-                offset_left += this.contentPadding;
+            // Don't use padding inside SOC block
+            if(this.charts[i].constructor.name 
+            != "SingleOccurrenceChart" 
+            || (i != 0 && this.charts[i-1].constructor.name 
+            != "SingleOccurrenceChart"))
+                offset_left += this.spacing;
             this.charts[i].dom.module
                 .attr("transform",
-                "translate("+offset_left+",0)"
+                "translate("+(this.charts[i].margin.left+offset_left)+",0)"
             );
-            this.charts[i].offsetLeft = offset_left;
-            offset_left+=this.charts[i].width;
+            this.charts[i].offsetLeft = this.charts[i].margin.left+offset_left;
+            offset_left += +this.charts[i].width + this.charts[i].margin.right;
         }
+
+        this.width = offset_left;
+        this.outerWidth = (this.margin.left||0) + 
+                           this.width + 
+                          (this.margin.right||0);
+
+        // Set outmost containers' dimensions
+        this.dom.svg
+            .attr("width", this.outerWidth)
+            .attr("height", this.outerHeight);
+        this.dom.content
+            .attr("width", this.width)
+            .attr("height", this.height);
+        d3.select(".content-listener-filler")
+            .attr("width", this.width)
+            .attr("height", this.height-this.contentOffsetTop);
     }
 
     /**
@@ -410,12 +473,27 @@ Flog2.Renderer = (function(base, dataformatter) {
         // Initiate object
         if(!this._def(c.type))
             c.type = c.constructor.name;
+
+        // Take type config if exists
+        // If user has specified particular chart object conf
+        // it overrides type config
+        if(type+"Conf" in this 
+        && c.type in this[type+"Conf"]) {
+            if("pointSizeVaries" in this[type+"Conf"][c.type])
+                this["setChart"+
+                    (this[type+"Conf"][c.type].pointSizeVaries?
+                    "Proportional":"Fixed")
+                ](c.type);
+            for(var k in this[type+"Conf"][c.type]) {
+                c[k] = c[k] || this[type+"Conf"][c.type][k];
+            }
+        }
         if(this._def(window.Flog2[c.type])) {
             if(!(c instanceof window.Flog2[c.type])) {
                 this[type][i] = new window.Flog2[c.type](c);
             }
         } else {
-            console.log(type+" with type "+
+            console.error(type+" with type "+
                 c.type+" not found");
         }
         // object id
@@ -473,9 +551,14 @@ Flog2.Renderer = (function(base, dataformatter) {
     @param {object} - content object
     @param {integer} - offset from left side of chart area in px
     */
-    Renderer.prototype.setObject = function (type, obj, offset_left) {
+    Renderer.prototype.setObject = function (type, obj) {
+        // Insert 
+        if(type+"Conf" in this 
+        && obj.constructor.name in this[type+"Conf"])
+            for(var k in this[type+"Conf"][obj.constructor.name])
+                 obj[k] = this[type+"Conf"][obj.constructor.name][k];
+
         obj.up = this;
-        obj.offsetLeft = offset_left;
         obj.offsetTop = this.contentOffsetTop;
         obj.minDepth = this.minDepth;
         obj.maxDepth = this.maxDepth;
@@ -485,14 +568,9 @@ Flog2.Renderer = (function(base, dataformatter) {
         if("data" in obj && !("src" in obj))
             obj.data = this.data;
         
-        var attr = {
-            transform: "translate("+offset_left+",0)",
-            width: obj.width
-        }
-        if(type == "axes") 
-            attr.overflow = "visible";
-        for(var k in attr)
-            obj.dom.module.attr(k, attr[k]);
+        obj.dom.module
+           .attr("width", obj.width)
+           .attr("overflow", "visible");
 
         // If chart.parent dom object doesn't have id
         // then it means that it hasn't been drawn yet
@@ -517,21 +595,25 @@ Flog2.Renderer = (function(base, dataformatter) {
     */
     Renderer.prototype.setObjects = function (type) {
         if(!(type in this)) {
-            console.error("Renderer.setObjects: "+type+" is not correct object type");
+            console.error("Renderer.setObjects: "+
+                type+" is not correct object type");
             return;
         }
         var offset_left = this.axesAreaWidth + 
-            this.contentPadding;
+            this.spacing;
         var flag = false;
         for(var i=0, n=this[type].length; i < n; i++) {
             var obj = this[type][i];
+            if(obj.constructor.name == "Object") {
+                continue;
+            }
             obj.name = type+"-"+i;
             this.setObject(type, obj, offset_left);
             offset_left += obj.width;
 
             var isSoc = obj.constructor.name == "SingleOccurrenceChart";
             if(!isSoc || (isSoc && !flag)) 
-                offset_left += this.contentPadding;
+                offset_left += this.spacing;
             if(isSoc && !flag) flag = true;
             delete obj; // delete reference to the object
         }
@@ -594,12 +676,18 @@ Flog2.Renderer = (function(base, dataformatter) {
         this.zoom.y(this.Y);
     }
 
+    /**
+
+    */
     Renderer.prototype.eventDragStart = function() {
         d3.event.preventDefault();
         this.drag.depth = this.Y.invert(
             d3.mouse(this.dom.content[0][0])[1]);
     }
 
+    /**
+
+    */
     Renderer.prototype.eventDrag = function() {
         if(this.drag.depth==null) return;
         if(this.skip<2) {
@@ -624,24 +712,128 @@ Flog2.Renderer = (function(base, dataformatter) {
         this.redraw();
     }
 
+    /**
+    Re-calculate singleOccurrenceChart block maxvalue and
+    get all column widths for these charts
+    */
+    Renderer.prototype.setChartProportional = function (type) {
+        if(!(type in this.chartsConf))
+            this.chartsConf[type] = {};
+
+        var conf = this.chartsConf[type];
+
+        conf.maxWidth = this.mm2px(conf.maxWidthmm);
+        conf.pointWidth = this.mm2px(conf.pointWidthmm);
+
+        conf._maxValue = null;
+        conf._minValue = null;
+
+        if(conf.pointWidth && conf.pointWidth > conf.maxWidth)
+            conf.maxWidth = conf.pointWidth;
+
+        if(!conf.pointHeightmm 
+        || ""+conf.pointHeightmm == "" 
+        || conf.pointHeightmm == conf.pointWidthmm) {
+            conf.pointHeight = conf.pointWidth;
+            conf.pointHeightmm = conf.pointWidthmm;
+        }
+
+        this.charts.forEach(function(c){
+            if((!("type" in c) && c.constructor.name != type) 
+            || ("type" in c && c.type != type)) 
+                return;
+            c.maxValue = +d3.max(this.data, 
+                function(d){return Math.abs(+d[c.column])}
+            );
+            c.minValue = +d3.min(this.data, 
+                function(d){return Math.abs(+d[c.column])}
+            );
+            if(c.maxValue > conf._maxValue 
+            || conf._maxValue == null)
+                conf._maxValue = c.maxValue;
+            if(c.minValue < conf._minValue 
+            || conf._minValue == null)
+                conf._minValue = c.minValue;
+
+        }.bind(this));
+    }
+
+    /**
+
+    */
+    Renderer.prototype.setChartFixed = function (type) {
+        if(!(type in this.chartsConf)) 
+            this.chartsConf[type] = {};
+
+        var conf = this.chartsConf[type],
+            c = {};
+        c.width = +this.mm2px(conf.pointWidthmm).toFixed(2);
+        c.pointWidth = c.width;
+
+        if(!conf.pointHeightmm 
+        || ""+conf.pointHeightmm == ""
+        || conf.pointHeightmm == conf.pointWidthmm) {
+            conf.pointHeight = conf.pointWidth;
+            conf.pointHeightmm = conf.pointWidthmm;
+        }
+        c.pointHeight = +(this.mm2px(conf.pointHeightmm)||c.pointWidth).toFixed(2);
+        for(var k in c)
+            conf[k] = c[k];
+    }
+
+    /**
+
+    */
     Renderer.prototype.remove = function (event) {
-        event.preventDefault();
-        if(this._def(this.dom))
+//console.log("remove");
+        var event = event || false;
+        if(event)
+            event.preventDefault();
+        if(this.preventUnload) {
+            this.preventUnload = false;
+            return;
+        }
+
+        if(this._def(this.dom) 
+        && this.dom.content != null)
 		    this.dom.content
 		        .on(".slider", null)
 		        .on(".drag", null)
 		        .on(".zoom", null);
-        for(var i=this.charts;i--;)
-            this.charts[i].remove();
-        for(var i=this.axes;i--;)
-            this.axes[i].remove();
+
+        for(var i=this.charts.length;i--;) {
+            if("function" === typeof this.charts[i].remove) 
+                this.charts[i].remove();
+            this.charts[i] = null;
+        }
+        this.charts.length = 0;
+        for(var i=this.axes.length;i--;) {
+            if("function" === typeof this.axes[i].remove) 
+                this.axes[i].remove();
+            this.axes[i] = null;
+        }
+
+        this.axes.length = 0;
+        for(var i=this.guides.length;i--;) {
+            if("function" === typeof this.guides[i].remove)
+                this.guides[i].remove();
+            this.guides[i] = null;
+        }
+        this.guides.length = 0;
+
+        if("content" in this.dom 
+        && this.dom.content != null) {
+            this.dom.content.select("rect").remove();
+            this.dom.content.remove();
+        }
+        d3.select("#"+this.id+"-chart-container").remove();
         for(var k in this.dom)
             this.dom[k] = null;
-        for(var i=this.guides;i--;)
-            this.guides[i].remove();
-        this.data = null;
-        this.dataStr = null;
-        this.zoom = null
+
+        this.DATA_COLUMNS.length = 0;
+        this.data.length = 0;
+        this.dataStr = "";
+        this.zoom = null;
     }
 
     return Renderer;

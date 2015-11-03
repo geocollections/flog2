@@ -11,6 +11,7 @@ Flog2.Axis = (function(base) {
         this.direction = c.direction||"left"; // "top", "bottom", "left" or "right"
         this.scale = c.scale||null;
         this.n_ticks = c.n_ticks||10;
+        this.n_minorTicks = c.n_minorTicks||1;
         this.tickSize = c.tickSize||null;
         this.minorTickSize = c.minorTickSize||this.tickSize||5;
         this.margins(c.margin);
@@ -22,13 +23,13 @@ Flog2.Axis = (function(base) {
         }
         this.style(c.styles);
 
-        this.dom = {module:null, major:null, minor:null}
+        this.dom = {module:null, major:null, minor:null, minorLines:null}
     }
 
     /**
     D3 axis element
     */
-    Axis.prototype.render = function() {
+    Axis.prototype.getMajor = function() {
         var axis = d3.svg.axis();
         axis.scale(this.scale);
         axis.orient(this.direction);
@@ -44,12 +45,12 @@ Flog2.Axis = (function(base) {
     /**
     
     */
-    Axis.prototype.render_ = function() { 
+/*    Axis.prototype.getMinor = function() { 
         var t=this,
             r=this.scale.ticks(this.dom.major.selectAll(".tick").size()),
-            avg = (r[1]-r[0])/2,
-            data=[];
-
+            avg = (r[1]-r[0]) / 2,
+            data = [];
+console.log(r);
         if((this.scale(r[0]) > this.scale(-avg)) 
         && this.scale(-avg) > 0)
             data.push(r[0] - avg); 
@@ -69,24 +70,85 @@ Flog2.Axis = (function(base) {
             data.unshift(r[0] - avg);
 
         var cases = {
-            "top":{x1:this.scale,x2:this.scale,y1:0,y2:-this.minorTickSize},
-            "left":{x1:-this.minorTickSize,x2:0,y1:this.scale,y2:this.scale}
+            "top":{
+                x1: this.scale,
+                x2: this.scale,
+                y1: 0,
+                y2: -this.minorTickSize
+            },
+            "left":{ 
+                x1: -this.minorTickSize,
+                x2: 0,
+                y1: this.scale,
+                y2: this.scale
+            }
         }
 
-        var minor = this.dom.minor.selectAll("line").data(data),
-            minorE = minor.enter().append("line");
+        this.dom.minorLines = this.dom.minorLines.data(data),
+        this.dom.minorLines.enter().append("line");
 
         for(var k in cases[this.direction])
-            minor.attr(k, cases[this.direction][k])
-        minor.attr("style", this.styles["minor-tick"]);
-        minor.exit().remove();
+            this.dom.minorLines.attr(k, cases[this.direction][k])
+        this.dom.minorLines.attr("style", this.styles["minor-tick"]);
+        this.dom.minorLines.exit().remove();
+    }*/
+
+    Axis.prototype.getMinor = function() { 
+        var t=this,
+            r=this.scale.ticks(this.dom.major.selectAll(".tick").size()),
+            size = (r[1]-r[0]) / (this.n_minorTicks + 1),
+            data = [],
+            wh = this.direction == "top" || this.direction == "bottom" ? 1 : 0;
+        data.length = 0;
+        if(r[0] - this.scale.domain()[0] > size) {
+            var n_ticks = Math.floor((r[0] - this.scale.domain()[0]) / size);
+            for(var i=n_ticks;i--;i) 
+                data.push(r[0] - size * (i+1)); 
+        }
+        for(var i=0,n=r.length-1; i<n; i++)
+            for(var j=0,m=this.n_minorTicks + 1;j<m;j++)
+                data.push(r[i] + size*j);    
+
+        // Add minor tick after the last major tick if there's space
+        if((this.scale.domain()[1]-r[r.length-1]) > size){
+            for(var i=0,n=Math.floor((this.scale.domain()[1]-r[r.length-1]) / size);i<n;i++)
+                data.push(r[r.length-1] + (i+1)*size);
+        }
+        // Add minor tick before the first major tick if there's space
+        if((this.scale(r[0])) > this.scale(size))
+            data.unshift(r[0] - size);
+
+        var cases = {
+            "top":{
+                x1: this.scale,
+                x2: this.scale,
+                y1: 0,
+                y2: -this.minorTickSize
+            },
+            "left":{ 
+                x1: -this.minorTickSize,
+                x2: 0,
+                y1: this.scale,
+                y2: this.scale
+            }
+        }
+
+        this.dom.minorLines = this.dom.minorLines.data(data),
+        this.dom.minorLines.enter().append("line");
+
+        for(var k in cases[this.direction])
+            this.dom.minorLines.attr(k, cases[this.direction][k])
+        this.dom.minorLines.attr("style", this.styles["minor-tick"]);
+        this.dom.minorLines.exit().remove();
     }
 
     /**
 
     */
     Axis.prototype.draw = function() {
-        var axis = this.render();
+        //var major = this.getMajor();
+
+        this.dom.major = this.dom.module.append("g");
 
         this.attr = {
             overflow: "visible",
@@ -101,15 +163,14 @@ Flog2.Axis = (function(base) {
             right:{x:0, y:0}, // Not used
             bottom:{x:0, y:0}  // Not used
         };
+
         for(var k in cases[this.direction])
             this.attr[k] = cases[this.direction][k];
-
-        this.dom.major = this.dom.module.append("g");
         
         for(var k in this.attr)
             this.dom.major.attr(k, this.attr[k]);
 
-        this.dom.major.call(axis);
+        this.dom.major.call(this.getMajor());
         this.dom.major
             .selectAll("text")
             .attr("style", this.styles["text"]);
@@ -122,6 +183,7 @@ Flog2.Axis = (function(base) {
 
         // minor
         this.dom.minor = this.dom.module.append("g");
+        this.dom.minorLines = this.dom.minor.selectAll("line");
 
         for(var k in cases[this.direction])
             this.dom.minor.attr(k, cases[this.direction][k]);
@@ -133,17 +195,18 @@ Flog2.Axis = (function(base) {
 
     */
     Axis.prototype.redraw = function() {
-        var el = this.render();
+        var el = this.getMajor();
         this.dom.major.call(el);
-        this.render_();
+
+        this.getMinor();
 
         // text-anchor hack - it is inserted by d3.axis
         // and therefore static inclusion of text style
         // breaks it.
-		var sel=this.dom.module.selectAll("text");
-        if(sel[0].length > 0) {
-            sel.attr("style", 
-			    this.styles["text"]+";text-anchor:"+sel.style("text-anchor"));
+		var text=this.dom.module.selectAll("text");
+        if(text[0].length > 0) {
+            text.attr("style", 
+			    this.styles["text"]+";text-anchor:"+text.style("text-anchor"));
         }
 
         this.dom.major

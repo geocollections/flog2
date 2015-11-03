@@ -129,7 +129,9 @@
 }
 
 /* Form axes selector */
-
 .axes-selector {
-    text-align: left;
+    text-align: left !important;
+}
+.axes-selector > input {
+    width: 20px !important;
 }

@@ -440,11 +440,14 @@ Flog2.VerticalLineChart = (function(base) {
         this.data=null;
 
         // There might be better way dealing with this
-        if(this.labelPos!=null && !this.isMouseDown) {
+        if(this.labelPos != null 
+        && !this.isMouseDown) {
             this.eventLabelHide();
             this.eventLabelShow();
         }
-        this.dom.listener[0][0].parentNode.appendChild(this.dom.listener[0][0]);
+        this.dom.listener[0][0]
+            .parentNode.appendChild(
+                this.dom.listener[0][0]);
 
     }
 
@@ -452,18 +455,14 @@ Flog2.VerticalLineChart = (function(base) {
 
     */
     VerticalLineChart.prototype.remove = function() {
-        this.axes[0].remove();
-        //this.dom.label_g.remove();
-        //this.dom.label_rect.remove();
-        //this.dom.label_txt.remove();
+        if(this.axes.length > 0)
+            this.axes[0].remove();
         this.dom.path.selectAll("path").remove();
-        this.dom.path.remove();
         this.dom.points.selectAll(".vlc-point").remove();
         this.dom.listener
             .on(".vlc", null);
-        this.dom.listener.remove();
-        this.dom.content.remove();
-        this.dom.module.remove();
+        for(k in this.dom)
+             this.dom[k].remove();
         this.data=null;
     }
 

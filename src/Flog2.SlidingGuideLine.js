@@ -73,11 +73,20 @@ Flog2.SlidingGuideLine = (function(base) {
 
     */
     SlidingGuideLine.prototype.redraw = function() {
+        try {
         this.dom.line.attr("x2", this.width);
         this.dom.label.attr("x", this.width+2);
+        } catch (e) {
+            console.error(e);
+        }
         // bring sliding guideline to front
         if(this.dom.module[0][0])
             this.dom.module[0][0].parentNode.appendChild(this.dom.module[0][0]);
+    }
+
+    SlidingGuideLine.prototype.remove = function() {
+        for(var k in this.dom)
+            this.dom[k].remove();
     }
 
     return SlidingGuideLine;

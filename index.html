@@ -56,27 +56,42 @@ body {
 		<br />Chart scale 1:<input name="chartScale" value="0" step="1" class="autoscale" />
 	</fieldset>
 
-    <fieldset name="axes">
+    <fieldset name="axes" class="axes-selector">
         <legend>Axes</legend>
-        <div class="axes-selector"></div>
+        <input type="checkbox" name="axis-visibility[]" value="AxisStratigraphy" /> AxisStratigraphy<br />
+        <input type="checkbox" name="axis-visibility[]" value="AxisDefault" /> AxisDefault<br />
+        <input type="checkbox" name="axis-visibility[]" value="AxisDrillcoreBox" /> AxisDrillcoreBox<br />
+        <input type="checkbox" name="axis-visibility[]" value="AxisSectionBox" /> AxisSectionBox<br />
+        <input type="checkbox" name="axis-visibility[]" value="AxisSample" /> AxisSample<br />
+        <!--<div class="axes-selector"></div>-->
     </fieldset>
 
-	<fieldset name="VerticalLineChart">
+	<fieldset name="VerticalLineChart" style="text-align:left">
 		<legend>XY chart</legend>
 		<div class="data-column-selector">Select data columns</div>
 
 		<br />Width: <input type="number" name="width" />
-		<select name="pointType">
-			<option value="circle">Dot</option>
+        <select name="pointType">
+			<option value="circle">Circular</option>
 			<option value="rect">Square</option>
-		</select>
+		</select>        
 	</fieldset>
 
 
-	<fieldset name="SingleOccurrenceChart">
+	<fieldset name="SingleOccurrenceChart" style="text-align:left">
 		<legend>Fossil range chart</legend>
 		<div class="data-column-selector">Select data columns</div>
-		<br />Width: <input type="number" name="width" />
+        <select name="pointType">
+			<option value="ellipse">Ellipse</option>
+			<option value="rect">Square</option>
+		</select>
+        <br /> 
+        spacing: <input type="number" name="spacingmm" style="width:40px" />mm
+        <br />not fixed: <input type="checkbox" name="pointSizeVaries" style="width:20px" />
+        max.width: <input type="number" name="maxWidthmm" style="width:40px" />mm
+        <br />
+        width: <input type="number" name="pointWidthmm" step="0.01" style="width:40px" />mm
+        height: <input type="number" name="pointHeightmm" step="0.01" style="width:40px" />mm
 	</fieldset>
 
 	<br />
@@ -112,6 +127,7 @@ body {
 <script src="src/Flog2.AxisSample.js"></script>
 <script src="src/Flog2.AxisSectionBox.js"></script>
 <script src="src/Flog2.AxisStratigraphy.js"></script>
+<script src="src/Flog2.AxisDrillcoreBox.js"></script> 
 <script src="src/Flog2.SlidingGuideLine.js"></script>
 <script src="src/Flog2.VerticalLineChart.js"></script>
 <script src="src/Flog2.SingleOccurrenceChart.js"></script-->
@@ -123,7 +139,7 @@ var flog2_form = flog2_form||{};
 
 // Asyncronous data load from file. 
 // After data is loaded, initiate chart object
-d3.tsv(document.location.href.replace("/index.html","")+"/data/data.txt", function(d) {
+d3.tsv(document.location.href.replace("/index.html","")+"/data/data_quant.txt", function(d) {
 	flog2_form.f2obj = new Flog2({
 		title: "Viki section, Saaremaa, W Estonia", 
 		name: "test",
@@ -137,7 +153,7 @@ d3.tsv(document.location.href.replace("/index.html","")+"/data/data.txt", functi
 		//subChartAreaInnerPadding: 10,
 		headerHeight: 50,
 		footerHeight: 0,
-		axes: [{type: "AxisStratigraphy", src: "data/stratigraphy.txt"},
+		axes: [{type: "AxisStratigraphy", src: document.location.href.replace("/index.html","")+"/data/stratigraphy.txt"},
             {type: "AxisDefault"},
             {type: "AxisDrillcoreBox", 
                 src: "http://api.geokogud.info/drillcore_box/?callback=callback&format=jsonp&fp={%22drillcore_id%22:[{%22exact%22:%22236%22}],%22depth_start%22:[{%22gt%22:%22-1%22}]}", 
@@ -150,8 +166,22 @@ d3.tsv(document.location.href.replace("/index.html","")+"/data/data.txt", functi
         ],
 		guides: [{type: "SlidingGuideLine"}],
 		dataDelimiter: "\t",
+        chartsConf: {
+            SingleOccurrenceChart: {
+                spacingmm: 1,
+                pointWidthmm: 2,
+                //pointHeightmm: 1,
+                maxWidthmm: 6,
+                pointType: "ellipse",
+                pointSizeVaries: true
+            },
+            VerticalLineChart: {
+                pointType: "rect",
+                width: 100
+            }
+        },
 		charts: [
-		{
+/*		{
 			title: "MgO (%)",
 			footerHeight: 50,
 			column: "MgO (%)",
@@ -184,7 +214,8 @@ d3.tsv(document.location.href.replace("/index.html","")+"/data/data.txt", functi
 			footerHeight: 50,
 			column: "Laufeldochitina striata",
 			type: "SingleOccurrenceChart",
-			width: 10
+			width: 50,
+            step: true
 		},
 		{
 			title: "Conochitina clavaherculi",
@@ -311,14 +342,20 @@ d3.tsv(document.location.href.replace("/index.html","")+"/data/data.txt", functi
 			column: "Eisenackitina dolioliformis",
 			type: "SingleOccurrenceChart",
 			width: 10
-		},		{
+		},*/
+        {
 			title: "Angochitina longicollis",
 			footerHeight: 50,
 			column: "Angochitina longicollis",
-			type: "SingleOccurrenceChart",
-			width: 10
+			type: "SingleOccurrenceChart"
 		},
 		{
+			title: "Conochitina mamilla",
+			footerHeight: 50,
+			column: "Conochitina mamilla",
+			type: "SingleOccurrenceChart"
+		},
+		/*{
 			title: "Conochitina acuminata",
 			footerHeight: 50,
 			column: "Conochitina acuminata",
@@ -329,17 +366,9 @@ d3.tsv(document.location.href.replace("/index.html","")+"/data/data.txt", functi
 			title: "Margachitina margaritana",
 			footerHeight: 50,
 			column: "Margachitina margaritana",
-			type: "SingleOccurrenceChart",
-			width: 10
-		},
-		{
-			title: "Conochitina mamilla",
-			footerHeight: 50,
-			column: "Conochitina mamilla",
-			type: "SingleOccurrenceChart",
-			width: 10
-		},
-		],
+			type: "SingleOccurrenceChart"
+		}
+*/		],
 		/*
 		charts:[
 
@@ -379,7 +408,6 @@ d3.tsv(document.location.href.replace("/index.html","")+"/data/data.txt", functi
 		]
 		*/
 	}, d);
-
     // Add form controls
 	flog2_form.init();
 });

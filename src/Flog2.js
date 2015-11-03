@@ -13,7 +13,7 @@ d3.jsonp = function (url, callback) {
   function create(url) {
     var e = url.match(/callback=(\w+)/),//d3.jsonp.(\w+)/),
       c = e ? e[1] : rand();
-      
+
      //d3.jsonp[c] = function(data) {
     this[c] = function(data) {
         callback(data);
@@ -53,6 +53,18 @@ function extend(base, sub, prefix) {
         enumerable: false, value: sub });
 }
 
+function deepCopy(oldObj) {
+    var newObj = oldObj;
+    if (oldObj && typeof oldObj === 'object') {
+        newObj = Object.prototype.toString.call(oldObj) === "[object Array]" ? [] : {};
+        for (var i in oldObj) {
+            newObj[i] = deepCopy(oldObj[i]);
+        }
+    }
+    return newObj;
+}
+
+
 var Flog2 = Flog2||{};
 
 /** 
@@ -66,7 +78,7 @@ Flog2 = (function(){
     function Flog2 (c, d) {
         this.VERSION = "0.1";
 
-        if(c && d) 
+        if(c) 
             return new Flog2.Renderer(c, d);
     }
 
@@ -140,12 +152,26 @@ Flog2 = (function(){
     }
 
     /**
+    Reorder data column list array
+    based on real chart order
+    
+    Flog2.prototype.colReorderer = function() {
+        this.charts.forEach(function(d, i){
+            if(this.DATA_COLUMNS.indexOf(d.column) != -1)
+                this.DATA_COLUMNS.splice(
+                    this.DATA_COLUMNS.indexOf(d.column), 1);
+            this.DATA_COLUMNS.splice(i, 0, d.column);
+        }.bind(this));
+    }
+    */
+
+    /**
     Gets mm etalon height
     */
     Flog2.prototype.getEtalon = function() {
         var el = document.getElementById("mm_etalon");
         if(!this._def(el)) {
-            console.log("no etalon dom element included in page");
+            console.error("no etalon dom element included in page");
             this.etalon = undefined;
         } else
             this.etalon = el.clientHeight;
@@ -157,7 +183,7 @@ Flog2 = (function(){
     */
     Flog2.prototype.mm2px = function(mm) {
         //return mm * 3.5433;
-        return mm * 2.834646;
+        return mm ? mm * 2.834646 : false;
     }
 
     /**
@@ -166,7 +192,7 @@ Flog2 = (function(){
     */
     Flog2.prototype.px2mm = function(px) {
         //return px * 0.2822;
-        return px * 0.3527777;
+        return px ? px * 0.3527777 : false;
     }
 
     /**
@@ -212,7 +238,7 @@ Flog2 = (function(){
         data = data.join("\n");
 
         if("undefined" !== typeof this.dataStr)
-            this.dataStr = data;
+            this.dataStr = JSON.stringify(data);
         else
             return data;
     }
@@ -221,24 +247,29 @@ Flog2 = (function(){
     @param {string} - hook name representing its location in the code
     */
     Flog2.prototype.doHooks = function (location) {
-        if("undefined" === typeof this.hooks[location] 
+        if(!("hooks" in this) 
+        || !(location in this.hooks) 
         || this.hooks[location].length < 1)
-            return;
+            return null;
+
+        var output = [];
         for(var i=0,n=this.hooks[location].length;i<n;i++) {
             var h=this.hooks[location];
-            if(this._def( document[h] ))
-                document[h].bind(this)();
+            if(this._def(document[h]))
+                output.push({h: document[h].bind(this)(arguments)});
             else if(this._def(window[h])) {
-                window[h].bind(this)();
+                output.push({h: window[h].bind(this)(arguments)});
             } else {
                 var n_l=this.hooks[location][i].split("."), 
                     obj=window;
                 for(var j=0,m=n_l.length;j<m;j++)
                     obj = obj[n_l[j]];
                 
-                obj.bind(this)();
+                output.push({h: obj.bind(this)(arguments)});
             }
         }
+
+        return output;
     }
 
     return Flog2;

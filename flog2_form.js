@@ -23,23 +23,25 @@ var flog2_form = flog2_form || {
 
     init: function() {
         // Refresh button click
-        var btn_refresh = document.getElementsByName('refresh')[0];
-        btn_refresh.addEventListener('click', 
+        var btn_refresh = document.getElementsByName("refresh")[0];
+        btn_refresh.addEventListener("click", 
             this.redraw.bind(this), false);
 
         // Download button click
-        var btn_dl = document.getElementsByName('download')[0];
-        btn_dl.addEventListener('click', 
-            this.download, false);
+        var btn_dl = document.getElementsByName("download")[0], t = this;
+        btn_dl.addEventListener("click", function(){
+            t.f2obj.preventUnload = true;
+            t.download(this);
+        }, false);
 
         // If window dimensions are changed, resize chart
-        window.addEventListener('resize', 
+        window.addEventListener("resize", 
             this.getChartHeight.bind(this), false);
 
         // Autoscale event handler
         // Listen to .autoscale input field events to update
         // height parameters .
-        var as = document.getElementsByClassName('autoscale');
+        var as = document.getElementsByClassName("autoscale");
         for(var i=as.length;i--;) {
             as[i].addEventListener("blur", 
                 this.autoscale, false);
@@ -70,7 +72,9 @@ var flog2_form = flog2_form || {
     getInputs: function() {
         var form = this._gcls("flog2_form")[0],
             fs_l = form.getElementsByTagName("fieldset");
-        for(var i=0,nf=fs_l.length;i<nf;i++) {
+        for(var i=0, nf=fs_l.length; i<nf; i++) {
+            if(fs_l[i].name == "axes") 
+                continue;
             this.conf[fs_l[i].name] = {};
             var f_l = fs_l[i].elements;
             for(var j=0,m=f_l.length;j<m;j++) {
@@ -81,8 +85,7 @@ var flog2_form = flog2_form || {
                 if(f_l[j].type == "radio" 
                 && !f_l[j].checked)
                     continue;
-                if(f_l[j].type == "checkbox" 
-                && fs_l[i].name == "axes") {
+                if(f_l[j].type == "checkbox") {
                     this.conf[fs_l[i].name][f_l[j].name] = f_l[j].checked;
                     continue;
                 }
@@ -90,14 +93,10 @@ var flog2_form = flog2_form || {
                     f_l[j].type === "number" ? +f_l[j].value : f_l[j].value;
             }
         }
-        // dataStr
-        var ds=this._gid("Flog2DataStr").value;
-        this.conf["Flog2"].dataStr=ds;
     },
         
     attachToObject: function() {
-        var t = this,
-            cols_o = this.getChartColumns(), 
+        var cols_o = this.getChartColumns(), 
             pointer = {b:null, e:0};
         for(var fs in this.conf) {
             var c = this.conf[fs];
@@ -107,17 +106,8 @@ var flog2_form = flog2_form || {
                     if(this.changed.indexOf(fs+"."+ck) === -1 
                     || ck == "dataStr")
                         continue;
-
                     this.f2obj[ck] = c[ck];
                 }
-                if("dataStr" in c
-                && c["dataStr"]
-                    .replace(/(\r\n|\n|\r)/gm,"")
-                    .replace(" ","").length > 0) 
-                { 
-                    this.attachDataStrToObject(fs, c); 
-                }
-
                 // If chart proportions are changed
                 // then the whole chart should be redrawn
                 // First assess which width elements were changed
@@ -138,58 +128,58 @@ var flog2_form = flog2_form || {
                     this.f2obj.roundScale = true;
                     this.f2obj.chartScale = c.chartScale;
                 }
-            } else if (fs == "axes") {
-                this.getAxesVisible(fs);
             } else {
-                this.attachChartsToObject(cols_o, pointer, fs);
                 for(var ck in c) {
                     if(this.changed.indexOf(fs+"."+ck) === -1)
                         continue;
-                    for(var l=this.f2obj.charts.length;l--;) {
-                        // Do not reset width for paleontological charts with 
-                        // step values
-                        if("step" in this.f2obj.charts[l] 
-                        && this.f2obj.charts[l].step
-                        && ck == "width") 
-                            continue;
-                        if(fs == this.f2obj.charts[l].constructor.name)
-                            this.f2obj.charts[l][ck] = c[ck];
-                    }
+                    if(!(fs in this.f2obj.chartsConf))
+                        this.f2obj.chartsConf[fs] = {};
+                    this.f2obj.chartsConf[fs][ck] = c[ck];
                 }
+
+                // Add and remove charts
+                this.attachChartsToObject(cols_o, pointer, fs);
+
+                // Is chart point size fixed or proportional
+                if("pointSizeVaries" in this.conf[fs])
+                    this.f2obj["setChart"+
+                        (this.conf[fs].pointSizeVaries?"Proportional":"Fixed")
+                    ](fs);
             }           
         }
         this.changed.length = 0;
+
+        for(var i=this.f2obj.charts.length;i--;)
+            if(this.f2obj.charts[i].constructor.name == "VerticalLineChart")
+                this.f2obj.charts[i].labelRender();
     },
 
-    attachDataStrToObject: function(fs, c) {
+    attachDataStrToObject: function() {
+        var c = this.conf.Flog2;
+        //this.f2obj.dataStr = this.conf.Flog2.dataStr;
         c.dataDelimiter = this._d(c.dataDelimiter) ? 
             c.dataDelimiter : this.f2obj.dataDelimiter;
-        
         this.f2obj.data = (function(dl, str) {
+            str = JSON.parse(str);
             switch(dl) {
                  case "\\t", "\t": return d3.tsv.parse(str);
                  case ",": return d3.csv.parse(str);
                  case ";": return d3.dsv(";", "text/plain")
                                     .parse(";", str);
             }
-        })(c["dataDelimiter"], c["dataStr"]);
-        
-        this.f2obj.dataStr = c["dataStr"];
-        try {
-            this.f2obj['df_'+this.f2obj.dataFormatter]();
-        } catch (e) {console.log(e)}
+        })(c["dataDelimiter"], this.f2obj.dataStr);
     },
 
     attachChartsToObject: function(cols_o, pointer, fs) {
         var flag = false;
-        
         // Remove unused object
         for(var i=this.f2obj.charts.length;i--;) {
             var c=this.f2obj.charts[i];
             
             if(c.constructor.name == fs) {
                 if(!flag) pointer.e = i+1; flag = true;
-                if(!this._d(cols_o[fs]) || cols_o[fs].indexOf(c.column) == -1) {
+                if(!this._d(cols_o[fs]) 
+                || cols_o[fs].indexOf(c.column) == -1) {
                     // remove
                     this.f2obj.charts[i].remove();
                     this.f2obj.charts.splice(i, 1);
@@ -209,8 +199,8 @@ var flog2_form = flog2_form || {
                 for(var j=pointer.b,m=this.f2obj.charts.length;j<m;j++) {
                      if(cols_o[fs].indexOf(k)!=-1 
                      && this.f2obj.charts[j].column == k) {
-                          jump = true;
-                          pointer.b++;
+                         jump = true;
+                         pointer.b++;
                      }
                 }
                 if(jump) continue;
@@ -236,9 +226,11 @@ var flog2_form = flog2_form || {
     attachToForm: function() {
         // Update data-as-string textarea
         var ds=this._gid("Flog2DataStr");
-        if("undefined" !== typeof ds) {
-            ds.innerHTML=this.f2obj.dataStr;
-            ds.setAttribute("data-value", this.f2obj.dataStr);
+        if(this._d(ds)) {
+            var str = this.f2obj.dataStr == "" ? 
+                          "\"\"" : this.f2obj.dataStr;
+            ds.innerHTML = JSON.parse(str);
+            ds.setAttribute("data-value", str);
         }
         // Iterate over form fieldsets
         var form=this._gcls("flog2_form")[0],
@@ -261,7 +253,6 @@ var flog2_form = flog2_form || {
                         inp_l[j].checked = (inp_l[j].value == this.f2obj.dataDelimiter.replace("\t","\\t"));
                         continue;
                     }
-                    
                     inp_l[j].value = this.f2obj[inp_l[j].name];
                     inp_l[j].setAttribute("data-value", this.f2obj[inp_l[j].name]);
                 }
@@ -269,35 +260,27 @@ var flog2_form = flog2_form || {
                 this.setAxesVisible(inp_l.reverse());
             } else {
                 // Set data charts that are visible
-                var visibleCharts = {}, chartConf={};
+                var visibleCharts = {};//, chartConf = {};
                 for(var i_=this.f2obj.charts.length;i_--;){
                     var c=this.f2obj.charts[i_];
                     if(!this._d(visibleCharts[c.column]))
                         visibleCharts[c.column]=[];
                     visibleCharts[c.column]
                         .push(c.constructor.name);
-                    // General config for type of chart
-                    if(c.constructor.name == fs)
-                        chartConf[fs]=i_;
                 }
                 this.setChartColumns(visibleCharts);
 
                 // Set general data
                 // If chart is not visible in the chart area, take the value from
                 // class constructor
-                var o = !(fs in chartConf) ? 
-                    new window.Flog2[fs]({}) : 
-                    this.f2obj.charts[chartConf[fs]];
                 for(var j=inp_l.length;j--;) {
-                    var v = (inp_l[j].name in o) ? o[inp_l[j].name] : null;
-                    inp_l[j].value = v;
+                    var v = (inp_l[j].name in this.f2obj.chartsConf[fs]) ? 
+                                this.f2obj.chartsConf[fs][inp_l[j].name] : null;
+                    if(inp_l[j].type != "checkbox")
+                        inp_l[j].value = v;
+                    else 
+                        inp_l[j].checked = v;
                     inp_l[j].setAttribute("data-value", v);
-                }
-                if(!(fs in chartConf)) {
-                    try { o.remove() } catch(e) { 
-                        //console.log(e) 
-                    }
-                    o = null;
                 }
             }
         }
@@ -324,8 +307,20 @@ var flog2_form = flog2_form || {
                 }, false);
                 
             }
-
             var ul=document.createElement("ul");
+            var div_select = document.createElement("div");
+            div_select.innerHTML="Select all";
+            div_select.style.cursor = "pointer";
+            div_select.addEventListener("click", 
+                this.columnSelectAll, false);
+            ul.appendChild(div_select);
+            var div_select = document.createElement("div");
+            div_select.innerHTML="Deselect all";
+            div_select.style.cursor = "pointer";
+            div_select.addEventListener("click", 
+                this.columnDeselectAll, false);
+            ul.appendChild(div_select);
+
             for(var j=0,n=this.f2obj.DATA_COLUMNS.length;j<n;j++) {
                 var li=document.createElement("li"), 
                     k=this.f2obj.DATA_COLUMNS[j];
@@ -344,6 +339,23 @@ var flog2_form = flog2_form || {
         }
     },
 
+    updateDataColumnSelectorsHTML: function () {
+        var ul = this._gid("modal-content").children[0],
+            li = ul.getElementsByTagName("li");
+        // Remove existing column names
+        for(var j=li.length;j--;)
+            ul.removeChild(li[j]);
+            // Add new columns
+            for(var j=0,n=this.f2obj.DATA_COLUMNS.length;j<n;j++) {
+                var li=document.createElement("li"), 
+                    k=this.f2obj.DATA_COLUMNS[j];
+                li.innerHTML=k;
+                li.addEventListener("click", 
+                    this.columnToggler, false);
+                ul.appendChild(li);
+            }
+    },
+
     columnToggler: function(){
         var type = this.parentNode.dataset.type;
         if(this.classList.contains("_bold")) {
@@ -359,6 +371,24 @@ var flog2_form = flog2_form || {
         this.dataset.type = this.dataset.type.replace(",,",",");
     },
 
+    columnSelectAll: function() {
+        var type = this.parentNode.dataset.type,
+            li = this.parentNode.getElementsByTagName("li");
+        for(var i=li.length;i--;) {
+            li[i].classList.add("_bold");
+            li[i].dataset.type=("undefined" !== typeof li[i].dataset.type ? 
+                li[i].dataset.type+",":"")+type;
+        }
+    },
+    columnDeselectAll: function() {
+        var type = this.parentNode.dataset.type,
+            li = this.parentNode.getElementsByTagName("li");
+        for(var i=li.length;i--;) {
+            li[i].classList.remove("_bold");
+            if("undefined" !== typeof li[i].dataset.type) 
+                li[i].dataset.type = li[i].dataset.type.replace(type, "");
+        }
+    },
     columnSelector: function() {
         var type = this.dataset.type;
         document.getElementById("modal-container").style.display="block";
@@ -403,36 +433,39 @@ var flog2_form = flog2_form || {
     },
 
     addAxisSelectorHTML: function() {
-        var pl_l = this._gcls("axes-selector"), t = this;
-        if(pl_l.length > 0) {
-            // <br /><input /> Label
-            for(var i=0, n = this.f2obj.axes.length; i < n; i++) {
-                var input=document.createElement("input");
-                input.type = "checkbox";
-                input.name = "visible-axis-"+i;
-                
-                input.checked = this.f2obj.axes[i].isVisible;
-                input.addEventListener("click", function(){
-                    var j = this.name.replace("visible-axis-", "");
-                    t.f2obj.axes[+j].isVisible = this.checked;
-                    t.f2obj.redraw();
-                }, false);
-                pl_l[0].appendChild(input);
-                pl_l[0].appendChild(document.createTextNode(this.f2obj.axes[i].constructor.name));  
-                pl_l[0].appendChild(document.createElement("br"));
+        var fs = document.getElementsByTagName("fieldset"), 
+            t = this;
+        for(var i=fs.length;i--;) {
+            if(fs[i].name != "axes") 
+                continue;
+            var i_l = fs[i].getElementsByTagName("input");
+            for(var j=0,n=i_l.length;j<n;j++) {
+                if(i_l[j].name != "axis-visibility[]") 
+                    continue;
+                i_l[j].checked = false;
+                i_l[j].disabled="disabled"
+                for(var ai = this.f2obj.axes.length; ai--;) {
+                    if(this.f2obj.axes[ai].constructor.name == i_l[j].value) {
+                        i_l[j].checked = this.f2obj.axes[j].isVisible;
+                        i_l[j].removeAttribute("disabled");
+                        if(!i_l[j].hasAttribute("data-clickable")) {
+                            i_l[j].setAttribute("data-clickable", ai);
+                            i_l[j].addEventListener("click", function(){
+                                t.f2obj.axes[+this.dataset.clickable].isVisible = this.checked;
+                                t.f2obj.redraw();
+                            }, false);
+                        }
+                    }
+                }
             }
+            break;
         }
     },
 
     setAxesVisible: function(inp_l) {
         for(var i=0,n=inp_l.length;i<n;i++)
-            inp_l[i].checked = this.f2obj.axes[i].isVisible;
-    },
-
-    getAxesVisible: function(fs) {
-        for(var k in this.conf[fs]) {
-            this.f2obj.axes[+(k.replace("visible-axis-",""))].isVisible = this.conf[fs][k];
-        }
+            if(this._d(this.f2obj.axes[i]))
+                inp_l[i].checked = this.f2obj.axes[i].isVisible;
     },
 
     run: function() {
@@ -461,15 +494,39 @@ var flog2_form = flog2_form || {
     redraw: function () {
         this.getInputs();
         this.attachToObject();
-        this.f2obj.redraw();
+        var ds=this._gid("Flog2DataStr");
+        if(ds.value != JSON.parse(ds.dataset.value) || ds.value
+            .replace(/(\r\n|\n|\r)/gm, "")
+            .replace(" ", "").length < 1) 
+        {
+            try {
+                this.f2obj.remove();
+                for(var k in this.f2obj.c)
+                    this.f2obj[k] = this.f2obj.c[k];
+                this.f2obj.dataStr = JSON.stringify(ds.value);
+                this.f2obj.oMinDepth = null;
+                this.f2obj.oMaxDepth = null;
+                this.attachDataStrToObject();
+                // If data was inserted by user
+                this.f2obj.COLUMNS = d3.keys(this.f2obj.data[0]) || [];
+            } catch (e) {
+                console.error(e)
+            }
+            this.f2obj.draw();
+            this.f2obj.setDataColumnsList();
+            this.updateDataColumnSelectorsHTML();
+            this.addAxisSelectorHTML();
+        } else {
+            this.f2obj.redraw();
+        }
         this.attachToForm();
         return false;
     },
 
     // .svg file download 
     // http://d3export.housegordon.org
-    download: function () {
-        var name=this.parentNode.id.replace("flog2_form_","");
+    download: function (that) {
+        var name=that.parentNode.id.replace("flog2_form_","");
 
         // set css to svg
         var css_str="";
@@ -493,6 +550,7 @@ var flog2_form = flog2_form || {
         var form = document.getElementById("svgform");
         form['output_format'].value = 'svg';
         form['data'].value = svg_xml ;
+        //window.removeEventListener("beforeunload", this.f2obj.remove);
         form.submit();
     },
 

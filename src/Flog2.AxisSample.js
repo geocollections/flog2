@@ -121,9 +121,9 @@ Flog2.AxisSample = (function(base){
         this.dom.texts
             .attr("x", function(d){return 10 + (t.maxState + 1) * t.markerWidth})
             .attr("y", function(d){
-                return t.scale((d["depth_to"] - d["depth_from"] != 0 ? 
-                    (d["depth_from"] < t.minDepth ? t.minDepth : d["depth_from"]) : d["depth"]))+
-                    Math.abs((t.scale(d['depth_to']) - t.scale(d["depth_from"] < t.minDepth ? t.minDepth : d['depth_from'])) / 2) + 3
+                return t.scale(d.depth >= t.minDepth && d.depth <= t.maxDepth ? d.depth : 
+                    (d.depth < t.minDepth ? t.minDepth : t.maxDepth)
+                ) + 3*(d.depth < t.maxDepth ? 1 : -1);
             })
             .attr("class", "axis-sample-txt")
             .attr("style", this.styles["axis-sample-text"])
@@ -175,6 +175,14 @@ Flog2.AxisSample = (function(base){
             .attr("width", this.width);
         this.dataFormatter();
         this.render();
+    }
+
+    AxisSample.prototype.remove = function() {
+        this.dom.rects.on("click", null);
+        this.dom.rects.on("click", null);
+        for(var k in this.dom)
+            this.dom[k].remove();
+            this.dom[k] = null;
     }
 
     return AxisSample;

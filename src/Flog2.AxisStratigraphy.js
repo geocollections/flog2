@@ -34,10 +34,40 @@ Flog2.AxisStratigraphy = (function(base) {
     }
 
     /**
+    After an ajax call it might be necessary to 
+    change data returned. Hook "after_data_request" could
+    be used to inject custom dataformatter method.
+    Below is presented an example method how data formatter
+    might look like. In this example request return custom
+    json object consisting of "count" and "results" parameters.
+    When "count":0, then false is returned triggering cancellation
+    of rendering of stratigraphy axis and removing stratigraphy
+    axis from chart axis array. Data returned in "results"
+    parameter is injected to this.data.
+    */
+    AxisStratigraphy.demoHook_DataFormatter = function() {
+        var data = arguments[1];
+        if("count" in data 
+        && data.count < 1) {
+            this.remove();
+            for(var i=this.up.axes.length;i--;) {
+                if(this.up.axes[i].constructor.name 
+                == "AxisStratigraphy")
+                    this.up.axes.splice(i, 1);
+                this.doHooks("after_draw");
+                return false;
+            }
+        }
+        this.data = "results" in data ? data.results : data;
+        return true;
+    }
+
+    /**
     
     */
     AxisStratigraphy.prototype.render = function() {
-        var t=this, maxLevel = 0;
+        var t = this, 
+            maxLevel = 0;
 
         if(this.data == null) return;
             
@@ -128,10 +158,17 @@ Flog2.AxisStratigraphy = (function(base) {
     
     */
     AxisStratigraphy.prototype.draw = function() {
+        this.doHooks("before_draw");
+
         var mimeType=["csv","tsv","json","jsonp","text","xml"],
             cbfn = function(data) {
-                if(data) this.data=data;
-                if(this.cols) this.colRenamer();
+                var h = this.doHooks("after_data_request", data)||[];
+                for(var i=h.length;i--;) if(!h[i]) return;
+                
+                if(data)
+                    this.data = "results" in data ? data.results : data;               
+                if(this.cols) 
+                    this.colRenamer();
                 this.dom.rects = this.dom.module
                     .selectAll(".axis-stratigraphy-rect");
                 this.dom.texts = this.dom.module
@@ -139,14 +176,18 @@ Flog2.AxisStratigraphy = (function(base) {
                 this.dom.depths = this.dom.module
                     .selectAll(".axis-stratigraphy-depthtext");
                 this.render();
+
+                this.doHooks("after_draw");
                 this.up.redraw();
             };
 
         if(mimeType.indexOf(this.dataType) == -1) {
-            console.log("Invalid data delimiter code given. Possible values: csv,tsv,json,jsonp,txt,xml");
+            console.error("Invalid data delimiter code given."+ 
+                "Possible values: csv,tsv,json,jsonp,txt,xml");
             return;
         }
 
+        this.doHooks("before_data_request");
         this.src ? d3[this.dataType](this.src, cbfn.bind(this)) : cbfn.bind(this);
     }
 
@@ -155,6 +196,19 @@ Flog2.AxisStratigraphy = (function(base) {
     */
     AxisStratigraphy.prototype.redraw = function() {
         this.render();
+    }
+
+    AxisStratigraphy.prototype.remove = function() { 
+        this.dom.module
+            .selectAll(".axis-stratigraphy-rect").remove();
+        this.dom.module
+            .selectAll(".axis-stratigraphy-text").remove();
+        this.dom.module
+            .selectAll(".axis-stratigraphy-depthtext").remove();
+        for(var k in this.dom) {
+            this.dom[k].remove();
+            this.dom[k] = null;
+        }
     }
 
     return AxisStratigraphy;

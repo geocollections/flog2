@@ -106,7 +106,7 @@ Flog2.AxisDrillcoreBox = (function(base) {
             }.bind(this);
 
         if(mimeType.indexOf(this.dataType) == -1) {
-            console.log("Invalid data delimiter code given. Possible values: csv,tsv,json,jsonp,txt,xml");
+            console.error("Invalid data delimiter code given. Possible values: csv,tsv,json,jsonp,txt,xml");
             return;
         }
         this.src ? d3[this.dataType](this.src, cbfn) : cbfn();
@@ -123,10 +123,12 @@ Flog2.AxisDrillcoreBox = (function(base) {
 
     */
     AxisDrillcoreBox.prototype.remove = function() {
-        this.dom.rects.remove();
-        this.dom.texts.remove();
-        this.dom.module.remove();
+        this.dom.texts.on("click", null);
         this.data.length = 0;
+        for(var k in this.dom) {
+            this.dom[k].remove();
+            this.dom[k] = null;
+        }
     }
 
     return AxisDrillcoreBox;

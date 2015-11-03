@@ -9,6 +9,7 @@ Flog2.AxisDefault = (function(Axis){
         this.cls = "axis_default";
         this.width = 50; // Only used by chart proportion calculator
         this.isVisible = c.isVisible||true;
+        this.n_minorTicks = c.n_minorTicks||1;
     }
 
     return AxisDefault;
