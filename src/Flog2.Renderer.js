@@ -61,7 +61,8 @@ Flog2.Renderer = (function(base, dataformatter) {
         
         this.charts = c.charts||[];                        // If subchart config is given, use it
         this.chartsConf = c.chartsConf||{};                // Conf object for chart types
-        this.numCharts = c.numCharts||5;                   // Used when chart array is left empty meaning no config is given for charts.
+        this.chartsDefaultNum = c.chartsDefaultNum||5;     // Used when chart array is left empty meaning no config is given for charts.
+        this.chartsDefaultType = c.chartsDefaultType||"VerticalLineChart";  //
 
         this.spacing = c.spacing||20;                      // Space between subchart blocks in px
         
@@ -164,12 +165,12 @@ Flog2.Renderer = (function(base, dataformatter) {
         if(this.charts.length < 1) {
             var i=0,j=0,
                 n=this.COLUMNS.length;
-            while(i < this.numCharts && j < n) {
+            while(i < this.chartsDefaultNum && j < n) {
                 j++;
                 if(this.METADATA_COLUMNS.indexOf(this.COLUMNS[j-1]) != -1)
                     continue;
                 this.charts.push({
-                    type: "VerticalLineChart",
+                    type: this.chartsDefaultType,
                     title: this.COLUMNS[j-1],
                     column: this.COLUMNS[j-1],
                     name: "chart-"+i
@@ -736,6 +737,8 @@ Flog2.Renderer = (function(base, dataformatter) {
         || conf.pointHeightmm == conf.pointWidthmm) {
             conf.pointHeight = conf.pointWidth;
             conf.pointHeightmm = conf.pointWidthmm;
+        } else {
+            conf.pointHeight = this.mm2px(conf.pointHeightmm);
         }
 
         this.charts.forEach(function(c){
@@ -775,7 +778,8 @@ Flog2.Renderer = (function(base, dataformatter) {
         || conf.pointHeightmm == conf.pointWidthmm) {
             conf.pointHeight = conf.pointWidth;
             conf.pointHeightmm = conf.pointWidthmm;
-        }
+        } 
+
         c.pointHeight = +(this.mm2px(conf.pointHeightmm)||c.pointWidth).toFixed(2);
         for(var k in c)
             conf[k] = c[k];

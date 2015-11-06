@@ -48,7 +48,31 @@ Flog2.DataFormatter = (function() {
         }
         this.depth = this.maxDepth - this.minDepth;
 
-        this.data.sort(function(a, b){return d3.ascending(a.depth, b.depth);});
+        //this.data.sort(function(a, b){return d3.ascending(a.depth, b.depth);});
+
+        // -- sorting for SOC --
+        var val_d = {}, 
+            val_l = [],
+            meta_l = ["ID","sample_id","sample_number","depth","depth_to","depth_from"];
+        this.data.forEach(function(d){
+            for(var k in d) {
+                if(meta_l.indexOf(k) != -1)
+                    continue;
+                if(d[k] != 0)
+                    val_d[k] = !(k in val_d) ? 
+                        {key:k, start:d.depth, end:d.depth} : 
+                        {key:k, start:val_d[k].start, end:d.depth};
+            }
+        });
+        for(var k in val_d)
+            val_l.push(val_d[k]);    
+        val_l.sort(function(a, b){
+            return d3.descending(a.end, b.end)||d3.descending(a.start, b.start);
+        });
+        
+        this.COLUMNS = meta_l.concat(val_l.map(function(d){return d.key;}));
+        this.DATA_COLUMNS = val_l.map(function(d){return d.key;});
+        // /-- sorting --
     }
 
     /**
@@ -94,7 +118,6 @@ Flog2.DataFormatter = (function() {
         this.depth = this.maxDepth - this.minDepth;
         this.data.sort(function(a,b){return d3.ascending(a.depth,b.depth)});
     }
-
     // ... 
 
     return DataFormatter;
