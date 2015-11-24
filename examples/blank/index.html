@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="flog2.css" type="text/css" />
+<link rel="stylesheet" href="flog2_form.css" type="text/css" />
+<style type="text/css">
+body {
+	font-family: arial;
+	font-size:11px;
+	margin: 0;
+	padding: 0;
+}
+
+.chart { 
+	z-index:-1;
+	position: absolute;
+	margin: -15px 0 0 270px;
+	background-color: #fff;
+}
+
+#title { 
+    font-weight: bold; 
+    padding: 5px;
+}
+</style>
+</head>
+
+<body>
+<!-- Top draggable textarea -->
+<div id="dataStr"><textarea id="Flog2DataStr" class="drag-target"></textarea><div id="drag-tab-parent" class="drag-container"><div id="drag-tab" draggable="true" class="drag-button">DRAG DOWN FOR DATA</div></div></div>
+<!-- Get screen mm etalon -->
+<div id="mm_etalon" style="height:1mm;display:hidden;"></div>
+
+
+<form class="flog2_form" id="flog2_form_test">
+    <div id="title">FLOG2: Exploring geological section data</div>
+	<fieldset name="Flog2">
+		<br />Chart title: <input type="text" name="title" style="width: 100%" />
+		<br />Depth, top (m): <input type="number" name="minDepth" value="0.0" step="0.01" />
+		<br />Depth, bottom (m): <input type="number" name="maxDepth" value="0.0" step="0.01" />
+		<br />Chart height (mm): <input type="number" name="chartHeightmm" value="0" step="1" class="autoscale" />
+		<br />Chart scale 1:<input name="chartScale" value="0" step="1" class="autoscale" />
+	</fieldset>
+
+
+	<fieldset name="VerticalLineChart">
+		<legend>XY chart</legend>
+		<div class="data-column-selector">Select data columns</div>
+
+		<br />Width: <input type="number" name="width" />
+		<select name="pointType">
+			<option value="circle">Ellipse</option>
+			<option value="rect">Square</option>
+		</select>
+	</fieldset>
+
+
+	<fieldset name="SingleOccurrenceChart" style="text-align:left">
+		<legend>Fossil range chart</legend>
+		<div class="data-column-selector">Select data columns</div>
+        <select name="pointType">
+			<option value="ellipse">Ellipse</option>
+			<option value="rect">Square</option>
+		</select>
+        <br /> 
+        spacing: <input type="number" name="spacingmm" style="width:40px" />mm
+        <br />quant: <input type="checkbox" name="pointSizeVaries" style="width:20px" />
+        max.width: <input type="number" name="maxWidthmm" style="width:40px" />mm
+        <br />
+        width: <input type="number" name="pointWidthmm" step="0.01" style="width:40px" />mm
+        height: <input type="number" name="pointHeightmm" step="0.01" style="width:40px" />mm
+	</fieldset>
+
+	<br />
+	<input type="button" name="refresh" style="background-color: #A0D847;" value="Refresh" />
+	<input type="button" name="download" style="background-color: #A0D847;" value="Download SVG" style="width:150px"/>
+	<button style="background-color: #A0D847; z-index: 1001;" onclick="window.open('/flog2/help.html', 'help', 'width=800,height=800,scrollbars, resizable, toolbar=no,location=no,menubar=no')" >
+HELP
+</button>
+<p><a href="http://geokogud.info/flog2/examples/default" target="_blank">Check sample application with some data</a>.</p>
+</form>
+
+<div class="flog2_form_collapser">
+	<div class="flog2_form_collapser_floater"></div>
+	<div class="flog2_form_collapser_btn">&nbsp;<</div>
+</div>
+
+
+
+<!-- Chart container div -->
+<div class="chart" style="height:100%"></div>
+
+<!-- Hidden <FORM> to submit the SVG data to the server, which will convert it to SVG/PDF/PNG downloadable file.
+     The form is populated and submitted by the JavaScript below. 
+	form to save svg from http://d3export.housegordon.org --> 
+<form id="svgform" method="post" action="/cgi-bin/svg-download.cgi">
+	<input type="hidden" id="output_format" name="output_format" value="" />
+	<input type="hidden" id="data" name="data" value="" />
+</form>
+
+<!-- Load external js resources -->
+<script src="./../../d3/d3.js" charset="utf-8"></script>
+<script src="./../../build/2.0/flog2.js"></script>
+<script src="flog2_form.js"></script>
+
+<script type="text/javascript">
+
+var flog2_form = flog2_form||{};
+
+// Asyncronous data load from file. 
+// After data is loaded, initiate chart object
+
+flog2_form.f2obj = new Flog2({
+		title: "", 
+		name: "test",
+		parent: ".chart",
+		hooks: {"after_redraw": ["flog2_form.resize_hook"]}, 
+		chartsDefaultNum: 100,
+        chartsDefaultType: "SingleOccurrenceChart",
+		headerHeight: 50,
+		footerHeight: 0,
+		axes: [
+            {type: "AxisDefault", tickFormat: function(d){return Math.abs(d)}},
+            {type: "AxisSectionBox"},
+            {type: "AxisSample", 
+                link: function(d){window.open("http://geokogud.info/sample/"+d.ID, "_blank", "width=500,height=600,scrollbars=1")}}
+        ],
+		guides: [{type: "SlidingGuideLine"}],
+		dataDelimiter: "\t",
+        chartsConf: {
+            SingleOccurrenceChart: {
+                spacingmm: 2,
+                pointWidthmm: 2,
+                maxWidthmm: 10,
+                pointType: "rect",
+                pointSizeVaries: false
+            },
+            VerticalLineChart: {
+                pointType: "rect",
+                width: 100
+            }
+        },
+		charts: []
+	});
+
+    // Add form controls
+	flog2_form.init();
+</script>
+</body>
+</html>

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="flog2.css" type="text/css" />
+<link rel="stylesheet" href="flog2_form.css" type="text/css" />
+<style type="text/css">
+body {
+	font-family: arial;
+	font-size:11px;
+	margin: 0;
+	padding: 0;
+}
+
+.chart { 
+	z-index:-1;
+	position: absolute;
+	margin: -15px 0 0 270px;
+	background-color: #fff;
+}
+
+#title { 
+    font-weight: bold; 
+    padding: 5px;
+}
+
+</style>
+</head>
+
+<body>
+<!-- Top draggable textarea -->
+<div id="dataStr"><textarea id="Flog2DataStr" class="drag-target"></textarea><div id="drag-tab-parent" class="drag-container"><div id="drag-tab" draggable="true" class="drag-button"></div></div></div>
+<!-- Get screen mm etalon -->
+<div id="mm_etalon" style="height:1mm;display:hidden;"></div>
+
+
+<form class="flog2_form drag-target" id="flog2_form_test">
+    <div id="title" style="min-width:200px">FLOG2: Exploring geological section data</div>
+	<fieldset name="Flog2">
+		<!-- Data delimiter of used raw data -->
+        <!--
+		Delimiter: <br />
+			<input type="radio" name="dataDelimiter" value="\t" style="width:15px" checked="checked" /> tab 
+			<input type="radio" name="dataDelimiter" value="," style="width:15px" /> comma
+			<input type="radio" name="dataDelimiter" value=";" style="width:15px" /> semicolon
+		<br /> 
+        -->
+		<br />Chart title: <input type="text" name="title" style="width: 100%" />
+		<br />Depth, top (m): <input type="number" name="minDepth" value="0.0" step="0.01" />
+		<br />Depth, bottom (m): <input type="number" name="maxDepth" value="0.0" step="0.01" />
+		<!--
+		<br />Container height (px): <input type="number" name="outerHeight" value="0" step="1" />
+		<br />Chart area height (px): <input type="number" name="chartHeight" value="0" />
+		-->
+		<br />Chart height (mm): <input type="number" name="chartHeightmm" value="0" step="1" class="autoscale" />
+		<br />Chart scale 1:<input name="chartScale" value="0" step="1" class="autoscale" />
+	</fieldset>
+
+    <fieldset name="axes" class="axes-selector">
+        <legend>Axes</legend>
+        <input type="checkbox" name="axis-visibility[]" value="AxisStratigraphy" /> Stratigraphy<br />
+        <input type="checkbox" name="axis-visibility[]" value="AxisDefault" /> Scale<br />
+        <input type="checkbox" name="axis-visibility[]" value="AxisDrillcoreBox" /> Drillcore boxes<br />
+        <input type="checkbox" name="axis-visibility[]" value="AxisSectionBox" /> Section box<br />
+        <input type="checkbox" name="axis-visibility[]" value="AxisSample" /> Samples<br />
+        <!--<div class="axes-selector"></div>-->
+    </fieldset>
+
+	<fieldset name="VerticalLineChart" style="text-align:left">
+		<legend>XY chart</legend>
+		<div class="data-column-selector">Select data columns</div>
+
+		<br />Width: <input type="number" name="width" />
+        <select name="pointType">
+			<option value="circle">Circle</option>
+			<option value="rect">Rectangle</option>
+		</select>        
+	</fieldset>
+
+
+	<fieldset name="SingleOccurrenceChart" style="text-align:left">
+		<legend>Fossil range chart</legend>
+		<div class="data-column-selector">Select data columns</div>
+        <select name="pointType">
+			<option value="ellipse">Circle</option>
+			<option value="rect">Rectangle</option>
+		</select>
+        <br /> 
+        spacing: <input type="number" name="spacingmm" style="width:40px" />mm
+        <br />quant: <input type="checkbox" name="pointSizeVaries" style="width:20px" />
+        max.width: <input type="number" name="maxWidthmm" style="width:40px" />mm
+        <br />
+        width: <input type="number" name="pointWidthmm" step="0.01" style="width:40px" />mm
+        height: <input type="number" name="pointHeightmm" step="0.01" style="width:40px" />mm
+	</fieldset>
+
+	<br />
+	<input type="button" name="refresh" value="Refresh" />
+	<input type="button" name="download" value="Download as SVG" style="width:150px"/>
+</button>
+<p><a href="http://geokogud.info/flog2/examples/blank" target="_blank">Use sample application with copy-paste option</a>.</p>
+</form>
+</form>
+
+<div class="flog2_form_collapser">
+	<div class="flog2_form_collapser_floater"></div>
+	<div class="flog2_form_collapser_btn"></div>
+</div>
+
+<!-- Chart container div -->
+<div class="chart" style="height:100%"></div>
+
+<!-- Hidden <FORM> to submit the SVG data to the server, which will convert it to SVG/PDF/PNG downloadable file.
+     The form is populated and submitted by the JavaScript below. 
+	form to save svg from http://d3export.housegordon.org --> 
+<form id="svgform" method="post" action="/cgi-bin/svg-download.cgi">
+	<input type="hidden" id="output_format" name="output_format" value="" />
+	<input type="hidden" id="data" name="data" value="" />
+</form>
+
+<!-- Load external js resources -->
+<script src="./../../d3/d3.js" charset="utf-8"></script>
+<script src="./../../build/2.0/flog2.js"></script>
+<!--script src="src/Flog2.js"></script>
+<script src="src/Flog2.DataFormatter.js"></script>
+<script src="src/Flog2.Renderer.js"></script>
+<script src="src/Flog2.Axis.js"></script>
+<script src="src/Flog2.AxisDefault.js"></script>
+<script src="src/Flog2.AxisSample.js"></script>
+<script src="src/Flog2.AxisSectionBox.js"></script>
+<script src="src/Flog2.AxisStratigraphy.js"></script>
+<script src="src/Flog2.AxisDrillcoreBox.js"></script> 
+<script src="src/Flog2.SlidingGuideLine.js"></script>
+<script src="src/Flog2.VerticalLineChart.js"></script>
+<script src="src/Flog2.SingleOccurrenceChart.js"></script-->
+<script src="flog2_form.js"></script>
+
+<script type="text/javascript">
+
+var flog2_form = flog2_form||{};
+
+// Asyncronous data load from file. 
+// After data is loaded, initiate chart object
+d3.tsv(document.location.href.split("/examples/")[0]+"/data/data_quant.txt", function(d) {
+	flog2_form.f2obj = new Flog2({
+		title: "Viki section, Saaremaa, W Estonia", 
+		name: "test",
+		parent: ".chart",
+		hooks: {"after_redraw": ["flog2_form.resize_hook"]}, 
+		//width: 500, 
+		//height: 600, 
+		//height: "100%",
+		//scale: "1:10000",
+		//chartHeight: 500,
+		//subChartAreaInnerPadding: 10,
+		headerHeight: 50,
+		footerHeight: 0,
+		axes: [{type: "AxisStratigraphy", src: document.location.href.split("/examples/")[0]+"/data/stratigraphy.txt"},
+            {type: "AxisDefault"},
+            {type: "AxisDrillcoreBox", 
+                src: "http://api.geokogud.info/drillcore_box/?callback=callback&format=jsonp&fp={%22drillcore_id%22:[{%22exact%22:%22236%22}],%22depth_start%22:[{%22gt%22:%22-1%22}]}", 
+                dataType: "jsonp", 
+                cols: {depth_top: "depth_start", depth_base: "depth_end"},
+                link: function(d){window.open("http://geokogud.info/corebox/"+d.id, "_blank", "width=500,height=600,scrollbars=1")} },
+            {type: "AxisSectionBox"},
+            {type: "AxisSample", 
+                link: function(d){window.open("http://geokogud.info/sample/"+d.ID, "_blank", "width=500,height=600,scrollbars=1")}}
+        ],
+		guides: [{type: "SlidingGuideLine"}],
+		dataDelimiter: "\t",
+        chartsConf: {
+            SingleOccurrenceChart: {
+                spacingmm: 2,
+                pointWidthmm: 2,
+                //pointHeightmm: 1,
+                maxWidthmm: 10,
+                pointType: "rect",
+                pointSizeVaries: true
+            },
+            VerticalLineChart: {
+                pointType: "circle",
+                width: 100
+            }
+        },
+		charts: [
+/* geochemistry */
+			{
+				title: "CaO (%)",
+				name: "CaO",
+				pointType: "circle",
+				pointSize: 5,
+				type: "VerticalLineChart",
+				column: "CaO (%)",
+				width: 100,
+			},
+			{
+				title: "MgO (%)",
+				name: "MgO",
+				pointType: "circle",
+				pointSize: 5,
+				type: "VerticalLineChart",
+				column: "MgO (%)",
+				width: 100,
+			},
+			{
+				title: "SiO2 (%)",
+				name: "SiO2",
+				pointType: "circle",
+				pointSize: 5,
+				type: "VerticalLineChart",
+				column: "SiO2 (%)",
+				width: 100,
+			},			
+/* fossils */
+		{
+			title: "Conochitina electa",
+			footerHeight: 50,
+			column: "Conochitina electa",
+			type: "SingleOccurrenceChart"
+		},
+		{
+			title: "Ancyrochitina ancyrea s.l.",
+			footerHeight: 50,
+			column: "Ancyrochitina ancyrea s.l.",
+			type: "SingleOccurrenceChart"
+		},
+		{
+			title: "Conochitina elongata",
+			footerHeight: 50,
+			column: "Conochitina elongata",
+			type: "SingleOccurrenceChart"
+		},
+		{
+			title: "Eisenackitina dolioliformis",
+			footerHeight: 50,
+			column: "Eisenackitina dolioliformis",
+			type: "SingleOccurrenceChart"
+		},		
+		{
+			title: "Margachitina margaritana",
+			footerHeight: 50,
+			column: "Margachitina margaritana",
+			type: "SingleOccurrenceChart"
+		},
+        {
+			title: "Angochitina longicollis",
+			footerHeight: 50,
+			column: "Angochitina longicollis",
+			type: "SingleOccurrenceChart"
+		},
+        {
+			title: "Conochitina probocifera",
+			footerHeight: 50,
+			column: "Conochitina probocifera",
+			type: "SingleOccurrenceChart"
+		},
+        {
+			title: "Ramochitina ruhnuensis",
+			footerHeight: 50,
+			column: "Ramochitina ruhnuensis",
+			type: "SingleOccurrenceChart"
+		},
+        {
+			title: "Conochitina flamma",
+			footerHeight: 50,
+			column: "Conochitina flamma",
+			type: "SingleOccurrenceChart"
+		},		
+		{
+			title: "Conochitina acuminata",
+			footerHeight: 50,
+			column: "Conochitina acuminata",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Conochitina claviformis",
+			footerHeight: 50,
+			column: "Conochitina claviformis",
+			type: "SingleOccurrenceChart",
+			width: 10
+		},
+		{
+			title: "Conochitina mamilla",
+			footerHeight: 50,
+			column: "Conochitina mamilla",
+			type: "SingleOccurrenceChart"
+		},
+
+		{
+			title: "Conochitina aff. tuba",
+			footerHeight: 50,
+			column: "Conochitina aff. tuba",
+			type: "SingleOccurrenceChart"
+		},		
+		/*
+		{
+			title: "Mochtyella sp. 3",
+			footerHeight: 50,
+			column: "Mochtyella sp. 3",
+			type: "SingleOccurrenceChart"
+		},
+		{
+			title: "Kettnerites cf. sisyphi",
+			footerHeight: 50,
+			column: "Kettnerites cf. sisyphi",
+			type: "SingleOccurrenceChart"
+		},
+*/
+		],
+
+	}, d);
+    // Add form controls
+	flog2_form.init();
+});
+</script>
+</body>
+</html>
