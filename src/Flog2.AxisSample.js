@@ -56,6 +56,12 @@ Flog2.AxisSample = (function(base){
             d["depth_from"] = +d["depth_from"];
             d["depth_to"] = +d["depth_to"];
 
+            if(d.depth_to < d.depth_from) {
+                var x = d.depth_from;
+                d.depth_from = d.depth_to;
+                d.depth_to = x;                
+            }
+
             if(parent_depths.length == 0) {
                 parent_depths.push([d["depth_from"], d["depth_to"]]);
                 d["_sample_step"] = 0;
@@ -66,7 +72,7 @@ Flog2.AxisSample = (function(base){
                         // Add correct level to this record
                         if(isNaN(state)) 
                             state=j;
-                        parent_depths.splice(j, 1, [null, null]);
+                       //parent_depths.splice(j, 1, [null, null]);
                     }
                 }
                 if(!isNaN(state)) {
@@ -76,6 +82,7 @@ Flog2.AxisSample = (function(base){
                         this.maxState = state;
                 } else {
                     parent_depths.push([d["depth_from"], d["depth_to"]]);
+
                     d["_sample_step"] = j;
                     if(j > this.maxState)
                         this.maxState = j;
@@ -91,7 +98,6 @@ Flog2.AxisSample = (function(base){
     */
     AxisSample.prototype.render = function() {
         var t=this;
-
         this.dom.rects = this.dom.rects.data(this.data);
         this.dom.rects.enter().append("rect");
         this.dom.rects

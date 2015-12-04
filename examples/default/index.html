@@ -119,7 +119,7 @@ body {
 </form>
 
 <!-- Load external js resources -->
-<script src="./../../d3/d3.js" charset="utf-8"></script>
+<script src="./../../d3/3.5.5/d3.js" charset="utf-8"></script>
 <script src="./../../build/2.0/flog2.js"></script>
 <!--script src="src/Flog2.js"></script>
 <script src="src/Flog2.DataFormatter.js"></script>
@@ -160,6 +160,7 @@ d3.tsv(document.location.href.split("/examples/")[0]+"/data/data_quant.txt", fun
             {type: "AxisDrillcoreBox", 
                 src: "http://api.geokogud.info/drillcore_box/?callback=callback&format=jsonp&fp={%22drillcore_id%22:[{%22exact%22:%22236%22}],%22depth_start%22:[{%22gt%22:%22-1%22}]}", 
                 dataType: "jsonp", 
+                //isVisible: false,
                 cols: {depth_top: "depth_start", depth_base: "depth_end"},
                 link: function(d){window.open("http://geokogud.info/corebox/"+d.id, "_blank", "width=500,height=600,scrollbars=1")} },
             {type: "AxisSectionBox"},

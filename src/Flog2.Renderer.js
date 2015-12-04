@@ -16,7 +16,7 @@ Flog2.Renderer = (function(base, dataformatter) {
         this.data = data||[];                              // Input data array
         this.dataStr = "";                                 // dataToStr() fills this array
         this.dataDelimiter = c.dataDelimiter||",";         // Data-as-string data delimiter: tab, semicolon, comma
-        this.METADATA_COLUMNS = ["ID","sample_id","sample_number","depth","depth_to","depth_from","_F2AxisSampleStep"];
+        this.METADATA_COLUMNS = ["ID","sample_id","sample_number","depth","depth_to","depth_from","_F2AxisSampleStep","oDepth"];
         this.COLUMNS = data ? d3.keys(data[0]) : [];                   // All column headers array
         this.DATA_COLUMNS = [];                            // Data column names array
 
@@ -106,6 +106,7 @@ Flog2.Renderer = (function(base, dataformatter) {
     that of input data, reorder input data.
     */
     Renderer.prototype.setDataColumnsList = function () {
+        this.DATA_COLUMNS = [];
         for(var i=0,n=this.COLUMNS.length;i<n;i++)
             if(this.METADATA_COLUMNS.indexOf(this.COLUMNS[i])==-1)
                 this.DATA_COLUMNS.push(this.COLUMNS[i]);
@@ -149,6 +150,8 @@ Flog2.Renderer = (function(base, dataformatter) {
         
         // Call data formatter method
         this["df_"+this.dataFormatter]();
+
+        this.setDataColumnsList();                         // Fills DATA_COLUMNS array with data column names
 
         // If no axes specified, add default axes
         if(!("axes" in this.c)
@@ -277,7 +280,6 @@ Flog2.Renderer = (function(base, dataformatter) {
         this.maxFooterHeight = 0;
 
         this.getProportions();
-
         this.dom.content.attr(
             "transform", 
             "translate(0,"+this.contentOffsetTop+")"
@@ -288,7 +290,7 @@ Flog2.Renderer = (function(base, dataformatter) {
 
         this.reposition();
 
-        this.chartScale = this.getChartScale();
+        //this.chartScale = this.getChartScale();
         this.dom.title
             .attr("x", this.width / 2)
             .text(this.title + " (1:"+this.chartScale+")");
@@ -786,10 +788,9 @@ Flog2.Renderer = (function(base, dataformatter) {
     }
 
     /**
-
+    Cleanup of objects and events when chart is removed
     */
     Renderer.prototype.remove = function (event) {
-//console.log("remove");
         var event = event || false;
         if(event)
             event.preventDefault();
@@ -843,3 +844,4 @@ Flog2.Renderer = (function(base, dataformatter) {
     return Renderer;
 
 })(Flog2, Flog2.DataFormatter);
+

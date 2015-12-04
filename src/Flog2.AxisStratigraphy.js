@@ -12,6 +12,7 @@ Flog2.AxisStratigraphy = (function(base) {
         this.cellWidth = c.cellWidth||30;
         this.minDepth = c.minDepth||null;
         this.maxDepth = c.maxDepth||null;
+        this.hooks = c.hooks||null;
         this.src = c.src||null;
         this.dataType = c.dataType||"tsv";            // Data type if 
         this.data = !c.src && c.data ? c.data : null; // If no external source is given, data array from config object is expected

@@ -116,7 +116,7 @@ Flog2.VerticalLineChart = (function(base) {
         || this.isMouseDown
         || this.labelData.length == 0)
             return;
-        this.labelLastY = this.offsetY(d3.event);
+        this.labelLastY = this.offsetY(d3.event) - (this.up.dataFormatter == "ermas" ? 100 : 0);
         this.dom.label_g.attr("display", null);
         // iter from ground to depth
         for(var i=this.labelData.length;i--;) {
@@ -140,8 +140,8 @@ Flog2.VerticalLineChart = (function(base) {
            this.eventLabelHide();
            return;
         }
-
-        var offsetY = this.offsetY(d3.event),
+        
+        var offsetY = this.offsetY(d3.event) - (this.up.dataFormatter == "ermas" ? 100 : 0),
             relMovement = offsetY - this.labelLastY,
             j=null;
         if(relMovement < 0) { // direction up

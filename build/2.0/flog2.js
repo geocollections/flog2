@@ -5,9 +5,12 @@ Flog2
 Institute of Geology at Tallinn University of Technology
 http://www.gi.ee
 
-Build: T 10 nov 2015 23:36:19 EET
-*/
+Build: R 04 dets 2015 14:21:53 EET
 
+Licensed under The GNU General Public License v3.0, 
+for more information please read the LICENSE.md file in 
+this repository or visit the preceding link to the GNU website.
+*/
 
 /**
 d3.js jsonp plugin.
@@ -73,7 +76,9 @@ function deepCopy(oldObj) {
     }
     return newObj;
 }
-
+/**
+Flog2 
+*/
 
 var Flog2 = Flog2||{};
 
@@ -86,7 +91,7 @@ Flog2 = (function(){
     @constructor
     */
     function Flog2 (c, d) {
-        this.VERSION = "0.1";
+        this.VERSION = "2.0";
 
         if(c) 
             return new Flog2.Renderer(c, d);
@@ -209,9 +214,9 @@ Flog2 = (function(){
     Calculates chart scale.
     */
     Flog2.prototype.getChartScale = function () {
-        var scale = Math.abs(Math.round((
+        var scale = Math.abs(/*Math.round(*/(
                 (this.maxDepth - this.minDepth)*1000) / 
-                this.px2mm(this.chartHeight)));
+                this.px2mm(this.chartHeight)/*)*/).toFixed(2);
         return scale == 0 ? 1 : scale;
     }
 
@@ -257,10 +262,9 @@ Flog2 = (function(){
     @param {string} - hook name representing its location in the code
     */
     Flog2.prototype.doHooks = function (location) {
-        if(!("hooks" in this) 
-        || !(location in this.hooks) 
-        || this.hooks[location].length < 1)
-            return null;
+        if(!("hooks" in this)||this.hooks == null) return null;
+        if(!this._def(this.hooks[location])) return null;
+        if(this.hooks[location].length < 1) return null;
 
         var output = [];
         for(var i=0,n=this.hooks[location].length;i<n;i++) {
@@ -278,13 +282,13 @@ Flog2 = (function(){
                 output.push({h: obj.bind(this)(arguments)});
             }
         }
-
         return output;
     }
 
     return Flog2;
 
 })();
+
 /**
 Flog2.DataFormatter
 -------------------
@@ -306,6 +310,7 @@ Flog2.DataFormatter = (function() {
         var hasNeg = this.data.some(function(d){ return d.depth < 0; });
         this.data.forEach(function(d){
             if("depth_to" in d 
+            && d.depth_to != null 
             && d.depth_to < d.depth) {
                 var x = d.depth;
                 d.depth = d.depth_to;
@@ -326,10 +331,6 @@ Flog2.DataFormatter = (function() {
                 var d_from = d.depth_from;
                 d.depth_from = -d.depth_to;
                 d.depth_to = -d_from;
-                //if(d.depth_from < d.depth_to) {
-                //    d.depth_to = d.depth_from;
-                //    d.depth_from = -d_from;
-                //}
             }
         });
 
@@ -376,7 +377,6 @@ Flog2.DataFormatter = (function() {
         });
         
         this.COLUMNS = meta_l.concat(val_l.map(function(d){return d.key;}));
-        //this.DATA_COLUMNS = val_l.map(function(d){return d.key;});
         // /-- sorting --
     }
 
@@ -460,49 +460,7 @@ Flog2.DataFormatter = (function() {
             d.depth = (d.depth_from + d.depth_to) / 2;
             return true;
         });
-/*
-		var d_= (-1 !== Object.keys(this.data[0]).indexOf("depth_to")),
-            hasNeg = this.data.some(function(d){ return d.depth < 0; });
 
-		// Walk through dataset
-        this.data.forEach(function(d){
-            if(hasNeg) { // specific to ermas
-                d.depth = d.depth_to;
-                d.depth_from =-d.depth_from;
-                d.depth_to = d.depth_from;
-                d.depth = -d.depth;
-            }
-            d.depth_from = d.depth;
-            if(d.depth != "")
-                d.depth = parseFloat(d.depth);
-            else
-                return;
-            if(!d_ || d.depth_to == "" || isNaN(parseFloat(d.depth_to)))
-                d.depth_to = d.depth;
-      
-            d.depth = (d.depth + parseFloat(d.depth_to)) / 2;
-        });
-*//*
-		for(var i=this.data.length;i--;) {
-			this.data[i]["depth_from"] = this.data[i]["depth"];
-			// If data depth is not "", add it as float
-			if(this.data[i].depth!="") {
-				this.data[i].depth = parseFloat(this.data[i].depth);
-			} else {
-				continue;
-			}
-		
-			if (!d_ || this.data[i]["depth_to"] == "" || isNaN(parseFloat(this.data[i]["depth_to"]))) {
-				this.data[i]["depth_to"] = this.data[i]["depth"];
-			}
-		
-			// Calculate average depth if data contains depth_to column
-
-			this.data[i]["depth"] = (this.data[i]["depth"] + 
-					parseFloat(this.data[i]["depth_to"])) / 2;
-		
-		}
-*/
 		// Set depth limits only on initialization of the chart 
         // or when dataset limits are changed
 
@@ -526,17 +484,7 @@ Flog2.DataFormatter = (function() {
 /**
 Flog2 renderer module. Manages rendering process.
 */
-Flog2.Renderer = (function(
-
-
-
-
-
-
-
-
-
-base, dataformatter) {
+Flog2.Renderer = (function(base, dataformatter) {
     extend(base, Renderer);
     extend(dataformatter, Renderer, "df");
     
@@ -551,7 +499,7 @@ base, dataformatter) {
         this.data = data||[];                              // Input data array
         this.dataStr = "";                                 // dataToStr() fills this array
         this.dataDelimiter = c.dataDelimiter||",";         // Data-as-string data delimiter: tab, semicolon, comma
-        this.METADATA_COLUMNS = ["ID","sample_id","sample_number","depth","depth_to","depth_from","_F2AxisSampleStep"];
+        this.METADATA_COLUMNS = ["ID","sample_id","sample_number","depth","depth_to","depth_from","_F2AxisSampleStep","oDepth"];
         this.COLUMNS = data ? d3.keys(data[0]) : [];                   // All column headers array
         this.DATA_COLUMNS = [];                            // Data column names array
 
@@ -815,7 +763,6 @@ base, dataformatter) {
         this.maxFooterHeight = 0;
 
         this.getProportions();
-
         this.dom.content.attr(
             "transform", 
             "translate(0,"+this.contentOffsetTop+")"
@@ -826,7 +773,7 @@ base, dataformatter) {
 
         this.reposition();
 
-        this.chartScale = this.getChartScale();
+        //this.chartScale = this.getChartScale();
         this.dom.title
             .attr("x", this.width / 2)
             .text(this.title + " (1:"+this.chartScale+")");
@@ -1324,10 +1271,9 @@ base, dataformatter) {
     }
 
     /**
-
+    Cleanup of objects and events when chart is removed
     */
     Renderer.prototype.remove = function (event) {
-//console.log("remove");
         var event = event || false;
         if(event)
             event.preventDefault();
@@ -1381,6 +1327,7 @@ base, dataformatter) {
     return Renderer;
 
 })(Flog2, Flog2.DataFormatter);
+
 /**
 Axis
 */
@@ -1426,56 +1373,6 @@ Flog2.Axis = (function(base) {
         return axis;
     }
 
-    /**
-    
-    */
-/*    Axis.prototype.getMinor = function() { 
-        var t=this,
-            r=this.scale.ticks(this.dom.major.selectAll(".tick").size()),
-            avg = (r[1]-r[0]) / 2,
-            data = [];
-console.log(r);
-        if((this.scale(r[0]) > this.scale(-avg)) 
-        && this.scale(-avg) > 0)
-            data.push(r[0] - avg); 
-        
-        for(var i=0,n=r.length-1; i<n; i++)
-            data.push(r.slice(0, r.length-1)[i] + avg);    
-
-        var wh=this.direction=="top" || this.direction=="bottom" ? 1 : 0;
-        var m=this.scale.range()[wh];
-
-        // Add minor tick after the last major tick if there's space
-        if((m-this.scale(r[r.length-1])) > this.scale(avg)){
-            data.push(r[r.length-1] + avg);
-        }
-        // Add minor tick before the first major tick if there's space
-        if((this.scale(r[0])) > this.scale(avg))
-            data.unshift(r[0] - avg);
-
-        var cases = {
-            "top":{
-                x1: this.scale,
-                x2: this.scale,
-                y1: 0,
-                y2: -this.minorTickSize
-            },
-            "left":{ 
-                x1: -this.minorTickSize,
-                x2: 0,
-                y1: this.scale,
-                y2: this.scale
-            }
-        }
-
-        this.dom.minorLines = this.dom.minorLines.data(data),
-        this.dom.minorLines.enter().append("line");
-
-        for(var k in cases[this.direction])
-            this.dom.minorLines.attr(k, cases[this.direction][k])
-        this.dom.minorLines.attr("style", this.styles["minor-tick"]);
-        this.dom.minorLines.exit().remove();
-    }*/
 
     Axis.prototype.getMinor = function() { 
         var t=this,
@@ -1612,7 +1509,6 @@ console.log(r);
         this.dom.major.remove();
         this.dom.minor.selectAll("line").remove();
         this.dom.minor.remove();
-        //this.parent.selectAll("."+this.cls).remove();
     }
 
     return Axis;
@@ -1710,7 +1606,7 @@ Flog2.AxisSample = (function(base){
                         // Add correct level to this record
                         if(isNaN(state)) 
                             state=j;
-                        //parent_depths.splice(j, 1, [null, null]);
+                       //parent_depths.splice(j, 1, [null, null]);
                     }
                 }
                 if(!isNaN(state)) {
@@ -1720,6 +1616,7 @@ Flog2.AxisSample = (function(base){
                         this.maxState = state;
                 } else {
                     parent_depths.push([d["depth_from"], d["depth_to"]]);
+
                     d["_sample_step"] = j;
                     if(j > this.maxState)
                         this.maxState = j;
@@ -1735,7 +1632,6 @@ Flog2.AxisSample = (function(base){
     */
     AxisSample.prototype.render = function() {
         var t=this;
-
         this.dom.rects = this.dom.rects.data(this.data);
         this.dom.rects.enter().append("rect");
         this.dom.rects
@@ -1911,6 +1807,7 @@ Flog2.AxisStratigraphy = (function(base) {
         this.cellWidth = c.cellWidth||30;
         this.minDepth = c.minDepth||null;
         this.maxDepth = c.maxDepth||null;
+        this.hooks = c.hooks||null;
         this.src = c.src||null;
         this.dataType = c.dataType||"tsv";            // Data type if 
         this.data = !c.src && c.data ? c.data : null; // If no external source is given, data array from config object is expected

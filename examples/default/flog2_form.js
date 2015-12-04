@@ -143,7 +143,7 @@ var flog2_form = flog2_form || {
                     this.f2obj.roundScale = false;
                     this.f2obj.chartHeightmm = c.chartHeightmm;
                 } else {
-                    this.f2obj.roundScale = true;
+                    //this.f2obj.roundScale = true;
                     this.f2obj.chartScale = c.chartScale;
                 }
             } else {
@@ -512,6 +512,7 @@ var flog2_form = flog2_form || {
 // 8< -- 8< -- 8<
 
     resize_hook: function() {
+        this.chartScale = this.getChartScale();
         var d_=document.getElementsByName("Flog2")[0],
             f_l=["minDepth","maxDepth","chartScale"];
         if("undefined" !== typeof d_) {
@@ -519,9 +520,9 @@ var flog2_form = flog2_form || {
             for(var i=d.length;i--;) {
                 var x=f_l.indexOf(d[i].name);
                 if(x!=-1)
-                    d[i].value = (+this[f_l[x]]).toFixed(
-                        f_l[x] == "chartScale" && this.roundScale ? 0 : 2
-                    );
+                    d[i].value = (+this[f_l[x]]).toFixed(2);
+                    //    f_l[x] == "chartScale" && this.roundScale ? 0 : 2
+                    //);
             }
         }
     },

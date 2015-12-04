@@ -13,6 +13,7 @@ Flog2.Axis = (function(base) {
         this.n_ticks = c.n_ticks||10;
         this.n_minorTicks = c.n_minorTicks||1;
         this.tickSize = c.tickSize||null;
+        this.format = c.tickFormat||false;
         this.minorTickSize = c.minorTickSize||this.tickSize||5;
         this.margins(c.margin);
         this.styles = {
@@ -42,56 +43,6 @@ Flog2.Axis = (function(base) {
         return axis;
     }
 
-    /**
-    
-    */
-/*    Axis.prototype.getMinor = function() { 
-        var t=this,
-            r=this.scale.ticks(this.dom.major.selectAll(".tick").size()),
-            avg = (r[1]-r[0]) / 2,
-            data = [];
-console.log(r);
-        if((this.scale(r[0]) > this.scale(-avg)) 
-        && this.scale(-avg) > 0)
-            data.push(r[0] - avg); 
-        
-        for(var i=0,n=r.length-1; i<n; i++)
-            data.push(r.slice(0, r.length-1)[i] + avg);    
-
-        var wh=this.direction=="top" || this.direction=="bottom" ? 1 : 0;
-        var m=this.scale.range()[wh];
-
-        // Add minor tick after the last major tick if there's space
-        if((m-this.scale(r[r.length-1])) > this.scale(avg)){
-            data.push(r[r.length-1] + avg);
-        }
-        // Add minor tick before the first major tick if there's space
-        if((this.scale(r[0])) > this.scale(avg))
-            data.unshift(r[0] - avg);
-
-        var cases = {
-            "top":{
-                x1: this.scale,
-                x2: this.scale,
-                y1: 0,
-                y2: -this.minorTickSize
-            },
-            "left":{ 
-                x1: -this.minorTickSize,
-                x2: 0,
-                y1: this.scale,
-                y2: this.scale
-            }
-        }
-
-        this.dom.minorLines = this.dom.minorLines.data(data),
-        this.dom.minorLines.enter().append("line");
-
-        for(var k in cases[this.direction])
-            this.dom.minorLines.attr(k, cases[this.direction][k])
-        this.dom.minorLines.attr("style", this.styles["minor-tick"]);
-        this.dom.minorLines.exit().remove();
-    }*/
 
     Axis.prototype.getMinor = function() { 
         var t=this,
@@ -228,7 +179,6 @@ console.log(r);
         this.dom.major.remove();
         this.dom.minor.selectAll("line").remove();
         this.dom.minor.remove();
-        //this.parent.selectAll("."+this.cls).remove();
     }
 
     return Axis;

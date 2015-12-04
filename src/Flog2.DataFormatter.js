@@ -16,7 +16,16 @@ Flog2.DataFormatter = (function() {
 
     /** Default formatter */
     DataFormatter.prototype.default = function () {
+        var hasNeg = this.data.some(function(d){ return d.depth < 0; });
         this.data.forEach(function(d){
+            if("depth_to" in d 
+            && d.depth_to != null 
+            && d.depth_to < d.depth) {
+                var x = d.depth;
+                d.depth = d.depth_to;
+                d.depth_to = x;
+            }
+
             d.depth_from = d.depth;
             if(d.depth != "") 
                 d.depth = +d.depth;
@@ -26,6 +35,12 @@ Flog2.DataFormatter = (function() {
             || d.depth_to == null)
                 d.depth_to = d.depth;
             d.depth = (d.depth + (+d.depth_to)) / 2;
+            if(hasNeg) {
+                d.depth = -d.depth;
+                var d_from = d.depth_from;
+                d.depth_from = -d.depth_to;
+                d.depth_to = -d_from;
+            }
         });
 
         // Set depth limits only on initialization of the chart 
@@ -48,7 +63,7 @@ Flog2.DataFormatter = (function() {
         }
         this.depth = this.maxDepth - this.minDepth;
 
-        //this.data.sort(function(a, b){return d3.ascending(a.depth, b.depth);});
+        this.data.sort(function(a, b){return d3.ascending(a.depth, b.depth);});
 
         // -- sorting for SOC --
         var val_d = {}, 
@@ -71,7 +86,6 @@ Flog2.DataFormatter = (function() {
         });
         
         this.COLUMNS = meta_l.concat(val_l.map(function(d){return d.key;}));
-        this.DATA_COLUMNS = val_l.map(function(d){return d.key;});
         // /-- sorting --
     }
 
@@ -82,6 +96,13 @@ Flog2.DataFormatter = (function() {
         
         // Walk through dataset
         this.data.forEach(function(d){
+            if("depth_to" in d 
+            && d.depth_to < d.depth) {
+                var x = d.depth;
+                d.depth = d.depth_to;
+                d.depth_to = x;
+            }
+
             d.depth_from = d.depth;
             if(d.depth != "") 
                 d.depth = +d.depth;
@@ -119,6 +140,53 @@ Flog2.DataFormatter = (function() {
         this.data.sort(function(a,b){return d3.ascending(a.depth,b.depth)});
     }
     // ... 
+
+	DataFormatter.prototype.ermas = function () {
+		var hasNeg = this.data.some(function(d){ return d.depth < 0; });
+
+		// Walk through dataset
+        this.data = this.data.filter(function(d){
+            if(d.depth == "") 
+                return false;
+            d.depth = +d.depth;
+            if(hasNeg) { // specific to ermas
+                d.depth = -d.depth;
+                d.depth_from = -d.depth_to;
+                d.depth_to = d.depth;
+            } 
+            else {
+                if(!("depth_from" in d) 
+                || isNaN(+d.depth_from) 
+                || d.depth_from == null)
+                    d.depth_from = d.depth;
+                if(!("depth_to" in d) 
+                || d.depth_to == "" 
+                || isNaN(+d.depth_to) 
+                || d.depth_to == null)
+                    d.depth_to = d.depth;
+            }
+      
+            d.depth = (d.depth_from + d.depth_to) / 2;
+            return true;
+        });
+
+		// Set depth limits only on initialization of the chart 
+        // or when dataset limits are changed
+
+        var maxDepth = d3.max(this.data, function(d) { return d.depth; }),
+            minDepth = d3.min(this.data, function(d) { return d.depth; });
+        if(!this._def(this.maxDepth) || maxDepth!=this.oMaxDepth) {
+            this.maxDepth = maxDepth;
+            this.oMaxDepth = maxDepth;
+        }
+        if(!this._def(this.minDepth) || minDepth != this.oMinDepth) {
+            this.minDepth = minDepth;
+            this.oMinDepth = minDepth;
+        }
+
+		this.depth = this.maxDepth - this.minDepth;
+		this.data.sort(function(a,b){return d3.ascending(a.depth,b.depth);});
+	}
 
     return DataFormatter;
 })();

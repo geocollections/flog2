@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="flog2.css" type="text/css" />
+<link rel="stylesheet" href="flog2_form.css" type="text/css" />
+<style type="text/css">
+body {
+	font-family: arial;
+	font-size: 10pt;
+	padding: 20px;
+}
+
+
+</style>
+</head>
+
+<body>
+
+<h1>FLOG2 - Quick start guide</h1>
+<p>
+FLOG2 stands for Faunal LOG version 2. It is a small program to save a geologist time and efforts in drawing paleontological range charts and plotting geochemical data from a single section. It allows to set precise scale, plot sample markers and export the drawing to Adobe Illustrator or CorelDraw for final adjustments and combining with other data. FLOG2 is free and open source software, you are free to download, use, modify and distribute the program code, which can be found at <a href="http://github.com/geocollections/flog2">github.com/geocollections/flog2</a>.
+</p>
+<hr />
+
+<p>To start with, use the sample application with no predefined data: <a href="http://geokogud.info/flog2/examples/blank" target="_blank">geokogud.info/flog2/examples/blank/</a></p>  
+<p>Drag the handle in the top center of the window to open the data area where you can copy-paste some text. Once you have meaningful data there then click refresh to draw the graph.</p>
+<p>A minimal data matrix that allows producing meaningful chart contains a depth column (with column name "depth") and two rows (= two samples) with numeric sample depth in meters. Program will show the section box with scale and sample markers. For instance:
+
+
+<table border="1">
+ <tr>
+  <td>
+  depth
+  </td>
+ </tr>
+ <tr>
+  <td>
+  106.91
+  </td>
+ </tr>
+ <tr>
+  <td>
+  110.73
+  </td>
+ </tr>
+</table>
+</p>
+
+<p>Add one or more parameter columns identified by fossil taxon name or chemical substance to draw charts. For instance:</p>
+<table border="1">
+<tr>
+<td>depth</td><td>Angochitina longicollis</td><td>Conochitina mamilla</td><td>CaO [%]</td>
+</tr>
+<tr>
+  <td>106.91</td><td></td><td>1</td><td>15.6</td>
+ </tr>
+ <tr>
+  <td>110.73</td><td>1</td><td></td><td>13.2</td>
+ </tr>
+</table>
+</p>
+
+
+<p>
+Optionally add columns with names "depth_to", "sample_number" and "ID". This allows the program to draw exact vertical extent of samples, plot sample number, and link to database page using sample ID number (only works with samples recorded in Estonian geocollections database). For instance:
+
+<table border="1">
+<tr>
+<td>depth</td><td>depth_to</td><td>sample_number</td><td>ID</td><td>Angochitina longicollis</td><td>Conochitina mamilla</td><td>CaO [%]</td>
+</tr>
+<tr>
+  <td>106.91</td><td>107.05</td><td>OM4-328</td><td>59829</td><td></td><td>1</td><td>15.6</td>
+ </tr>
+ <tr>
+  <td>110.73</td><td>110.84</td><td>OM4-325</td><td>59826</td><td>1</td><td></td><td>13.2</td>
+ </tr>
+</table>
+</p>
+
+<p>Data cells may only contain numbers. Fossil occurrences are commonly coded "1". However, you may use larger numbers to code frequency classes, actual counts of specimens or percentage values. If using negative numbers for fossil occurrences, white markers will be drawn (denoting uncertain identification).</p>
+<p>For non-paleontological data most commonly numeric values denoting percentages are used.</p>
+<p>Samples may be empty and parameters may also contain no data. For instance:
+
+<table border="1">
+<tr>
+<td>depth</td><td>depth_to</td><td>sample_number</td><td>ID</td><td>Angochitina longicollis</td><td>Conochitina mamilla</td><td>Margachitina margaritana</td><td>CaO [%]</td>
+</tr>
+<tr>
+  <td>106.91</td><td>107.05</td><td>OM4-328</td><td>59829</td><td></td><td>14</td><td>44</td><td></td>
+ </tr>
+ <tr>
+  <td>110.73</td><td>110.84</td><td>OM4-325</td><td>59826</td><td>-7</td><td></td><td></td><td></td>
+ </tr>
+<tr>
+  <td>111.93</td><td>112.00</td><td>OM4-324</td><td>59825</td><td>404</td><td></td><td></td><td></td>
+ </tr>
+ <tr>
+  <td>119.95</td><td>120.06</td><td>OM4-318</td><td>59819</td><td></td><td></td><td></td><td></td>
+ </tr> 
+</table>
+
+</p>
+
+<p>To explore additional features of FLOG2 check <a href="http://geokogud.info/flog2/examples/default" target="_blank">geokogud.info/flog2/examples/default/</a>.</p>
+
+
+</body>
+</html>
