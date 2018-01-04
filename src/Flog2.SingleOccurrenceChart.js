@@ -107,7 +107,8 @@ Flog2.SingleOccurrenceChart = (function(base) {
 
         if(this.pointSizeVaries)
             this.X = this.scaler(
-                 this.pointWidth, 
+                 //this.pointWidth, 
+                 0, // correcting marker scaling
                  this.maxWidth, 
                  this._minValue, 
                  this._maxValue
