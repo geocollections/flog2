@@ -8,5 +8,5 @@ User has options to set specific scale or chart height, upper and lower depth li
 
 Flog2 is based on [D3.js](https://github.com/mbostock/d3) for data manipulation and charting, and [d3export](https://github.com/agordon/d3export_demo) for exporting svg graphs. It was created as part of the [Estonian geocollections portal](http://geocollections.info). The name Flog2 comes from **f**aunal **log** version 2.
 
-Check out a [working demo](http://geokogud.info/flog2).
+Check out a [working demo](http://sarv.gi.ee/flog2).
 
